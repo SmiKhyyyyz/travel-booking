@@ -149,7 +149,6 @@ function applyPromoCodeFinal() {
      */
 
 function initBookingSummary() {
-    console.log('=== initBookingSummary appelée ===');
     
     // Récupérer le token de l'URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -654,87 +653,117 @@ function initTravelBookingParams() {
     /**
      * Create WooCommerce order and proceed to payment
      */
-function createOrder() {
-    // Afficher l'indicateur de chargement
-    const buttonText = $('#create-order').length ? $('#create-order').text() : $('#proceed-to-payment').text();
-    
-    if ($('#create-order').length) {
-        $('#create-order').text('Traitement en cours...').prop('disabled', true);
-    } else {
-        $('#proceed-to-payment').text('Traitement en cours...').prop('disabled', true);
-    }
-    
-    // Utiliser l'URL correcte pour créer la commande
-    const createOrderUrl = '/wp-json/travel-booking/v1/create-order';
-    
-    // Empêcher toute requête AJAX vers apply-promo pendant la création de commande
-    const originalAjax = $.ajax;
-    $.ajax = function(settings) {
-        if (settings.url && settings.url.includes('apply-promo')) {
-            // Ignorer silencieusement les requêtes vers apply-promo
-            console.log('Requête vers apply-promo ignorée pendant la création de commande');
-            return { abort: function() {} };
+    function createOrder() {
+        
+        // Empêcher les double-clics
+        if (window.createOrderInProgress) {
+            console.log('Création déjà en cours, abandon');
+            return;
         }
-        return originalAjax.apply(this, arguments);
-    };
-    
-    // Faire la requête de création de commande
-    originalAjax({
-        url: createOrderUrl,
-        type: 'POST',
-        data: JSON.stringify({
-        token: travel_booking_params.token
-    }),
-        contentType: 'application/json',
-        dataType: 'json',
-        success: function(response) {
-            console.log('Réponse du serveur (création commande):', response);
-            
-            if (response.success && response.data && response.data.payment_url) {
-                // Rediriger vers la page de paiement
-                window.location.href = response.data.payment_url;
-            } else {
-                // Gérer l'erreur
-                alert('Erreur lors de la création de la commande. Veuillez réessayer.');
+        window.createOrderInProgress = true;
+        
+        // Afficher l'indicateur de chargement
+        const $createButton = $('#create-order');
+        const $proceedButton = $('#proceed-to-payment');
+        let buttonText = '';
+        
+        if ($createButton.length) {
+            buttonText = $createButton.text();
+            $createButton.text('Traitement en cours...').prop('disabled', true);
+        } else if ($proceedButton.length) {
+            buttonText = $proceedButton.text();
+            $proceedButton.text('Traitement en cours...').prop('disabled', true);
+        }
+        
+        // Utiliser l'URL correcte pour créer la commande
+        const createOrderUrl = '/wp-json/travel-booking/v1/create-order';
+        
+        // Sauvegarder la fonction $.ajax originale
+        const originalAjax = $.ajax;
+        
+        // Empêcher toute requête AJAX vers apply-promo pendant la création de commande
+        $.ajax = function(settings) {
+            if (settings.url && settings.url.includes('apply-promo')) {
+                // Ignorer silencieusement les requêtes vers apply-promo
+                console.log('Requête vers apply-promo ignorée pendant la création de commande');
+                return { abort: function() {} };
+            }
+            return originalAjax.apply(this, arguments);
+        };
+        
+        // Faire la requête de création de commande
+        originalAjax({
+            url: createOrderUrl,
+            type: 'POST',
+            data: JSON.stringify({
+                token: travel_booking_params.token
+            }),
+            contentType: 'application/json',
+            dataType: 'json',
+            beforeSend: function(xhr) {
+                // Ajouter le nonce REST si disponible
+                if (travel_booking_params.rest_nonce) {
+                    xhr.setRequestHeader('X-WP-Nonce', travel_booking_params.rest_nonce);
+                }
+            },
+            success: function(response) {
+                
+                // CORRECTION ICI :
+                if (response.success && response.payment_url) {  // ← Supprimer .data
+                    console.log('Redirection vers:', response.payment_url);
+                    window.location.href = response.payment_url;  // ← Supprimer .data
+                    
+                } else {
+                    console.error('Erreur: Pas d\'URL de paiement dans la réponse');
+                    console.error('Réponse complète:', response);  // ← Debug
+                    alert('Erreur lors de la création de la commande. Veuillez réessayer.');
+                    
+                    // Réactiver le bouton - CORRECTION ICI :
+                    if ($('#create-order').length) {
+                        $('#create-order').text(buttonText).prop('disabled', false);
+                    } else {
+                        $('#proceed-to-payment').text(buttonText).prop('disabled', false);
+                    }
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('ERROR - Erreur lors de la création de la commande');
+                console.error('Status:', status);
+                console.error('Error:', error);
+                console.error('Response Text:', xhr.responseText);
+                
+                // Essayer d'extraire un message d'erreur
+                let errorMessage = 'Erreur lors de la création de la commande. Veuillez réessayer.';
+                
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.message || (response.data && response.data.message)) {
+                        errorMessage = response.message || response.data.message;
+                    }
+                } catch (e) {
+                    console.error('Erreur lors de l\'analyse de la réponse JSON:', e);
+                }
+                
+                alert(errorMessage);
                 
                 // Réactiver le bouton
-                if ($('#create-order').length) {
-                    $('#create-order').text(buttonText).prop('disabled', false);
-                } else {
-                    $('#proceed-to-payment').text(buttonText).prop('disabled', false);
+                if ($createButton.length) {
+                    $createButton.text(buttonText).prop('disabled', false);
+                } else if ($proceedButton.length) {
+                    $proceedButton.text(buttonText).prop('disabled', false);
                 }
+            },
+            complete: function() {
+                // Restaurer la fonction $.ajax originale
+                $.ajax = originalAjax;
+                
+                // Libérer le verrou
+                window.createOrderInProgress = false;
+                
+                console.log('=== createOrder TERMINE ===');
             }
-        },
-        error: function(xhr, status, error) {
-            console.error('Erreur lors de la création de la commande:', xhr.responseText);
-            
-            // Essayer d'extraire un message d'erreur
-            let errorMessage = 'Erreur lors de la création de la commande. Veuillez réessayer.';
-            
-            try {
-                const response = JSON.parse(xhr.responseText);
-                if (response.message || (response.data && response.data.message)) {
-                    errorMessage = response.message || response.data.message;
-                }
-            } catch (e) {
-                console.error('Erreur lors de l\'analyse de la réponse JSON:', e);
-            }
-            
-            alert(errorMessage);
-            
-            // Réactiver le bouton
-            if ($('#create-order').length) {
-                $('#create-order').text(buttonText).prop('disabled', false);
-            } else {
-                $('#proceed-to-payment').text(buttonText).prop('disabled', false);
-            }
-        },
-        complete: function() {
-            // Restaurer la fonction $.ajax originale
-            $.ajax = originalAjax;
-        }
-    });
-}
+        });
+    }
     
     // Make initTravelBooking function available globally
     window.initTravelBooking = initTravelBooking;
