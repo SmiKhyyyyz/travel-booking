@@ -60,8 +60,12 @@ class Travel_Booking_API {
      * Check if a given request has permission to get items
      */
     public function get_items_permissions_check($request) {
-        return true; // Public endpoint for now
+    $nonce = $request->get_header('X-WP-Nonce');
+    if (!$nonce || !wp_verify_nonce($nonce, 'wp_rest')) {
+        return new WP_Error('rest_forbidden', 'Invalid nonce', array('status' => 403));
     }
+    return true;
+}
     
     /**
      * Check if a given request has permission to create items
@@ -97,8 +101,14 @@ class Travel_Booking_API {
     public function calculate_price($request) {
         $params = $request->get_json_params();
         
-        $vehicle_id = intval($params['vehicle_id']);
-        $departure = sanitize_text_field($params['departure']);
+        // Validation renforcée
+        if (!isset($params['vehicle_id']) || !is_numeric($params['vehicle_id']) || $params['vehicle_id'] <= 0) {
+            return new WP_Error('invalid_vehicle_id', 'Vehicle ID must be a valid positive integer');
+        }
+
+        if (!isset($params['departure']) || empty(trim($params['departure']))) {
+            return new WP_Error('invalid_departure', 'Departure location is required');
+        }
         $destination = sanitize_text_field($params['destination']);
         $distance = floatval($params['distance']);
         $round_trip = isset($params['round_trip']) && $params['round_trip'];
@@ -194,122 +204,148 @@ class Travel_Booking_API {
     }
     
     /**
-     * Apply promo code
-     */
-    public function apply_promo($request) {
-        // Journaliser le début de la fonction
-        error_log('=== Début de apply_promo ===');
-        
+ * Apply promo code - VERSION CORRIGÉE
+ */
+public function apply_promo($request) {
+    // Log pour debug
+    error_log('=== Apply Promo Called ===');
+    
+    try {
+        // Récupérer les paramètres
         $params = $request->get_json_params();
-        error_log('Paramètres reçus: ' . print_r($params, true));
+        if (!$params) {
+            $params = $request->get_params();
+        }
+        
+        // Validation des paramètres
+        if (empty($params['token'])) {
+            return new WP_Error('missing_token', 'Token manquant', array('status' => 400));
+        }
+        
+        if (empty($params['code'])) {
+            return new WP_Error('missing_code', 'Code promo manquant', array('status' => 400));
+        }
         
         $token = sanitize_text_field($params['token']);
         $promo_code = sanitize_text_field($params['code']);
-        error_log('Token: ' . $token . ', Code promo: ' . $promo_code);
+        
+        // Vérifier que WooCommerce est actif
+        if (!class_exists('WC_Coupon')) {
+            return new WP_Error('woocommerce_not_loaded', 'WooCommerce non disponible', array('status' => 500));
+        }
         
         // Get the booking
         $booking = Travel_Booking_Booking::get_by_token($token);
-        error_log('Booking trouvé: ' . ($booking ? 'Oui' : 'Non'));
         
         if (!$booking) {
-            error_log('Erreur: Token de réservation invalide');
-            return new WP_Error('invalid_token', __('Invalid booking token.', 'travel-booking'), array('status' => 400));
+            return new WP_Error('invalid_token', 'Token de réservation invalide', array('status' => 400));
         }
         
         // Vérifier si le même code promo est déjà appliqué
-        if (isset($booking->promo_code) && $booking->promo_code === $promo_code) {
-            error_log('Code promo déjà appliqué: ' . $promo_code);
-            
-            // Définir une valeur de réduction par défaut si elle n'est pas disponible
-            $discount_percent = 10; // Valeur par défaut
-            
-            // Si vous avez stocké un type de réduction et un montant dans la réservation, vous pouvez les utiliser
-            if (isset($booking->discount_type) && isset($booking->discount_amount)) {
-                if ($booking->discount_type === 'percent') {
-                    $discount_percent = $booking->discount_amount;
-                } else {
-                    // Calculer le pourcentage approximatif pour un montant fixe
-                    $discount_percent = ($booking->discount_amount / $booking->price) * 100;
-                }
-            }
-            
-            return rest_ensure_response(array(
-                'success' => true,
-                'discount' => $discount_percent,
-                'code' => $promo_code,
-                'already_applied' => true
-            ));
-        }
-
-        if (!class_exists('WC_Coupon')) {
-            error_log('Erreur: Classe WC_Coupon non disponible');
-            return new WP_Error('woocommerce_not_loaded', __('WooCommerce coupon functionality is not available.', 'travel-booking'), array('status' => 500));
-        }
-
-        // Vérifier l'existence du coupon
-        try {
+        if (!empty($booking->promo_code) && $booking->promo_code === $promo_code) {
+            // Récupérer les détails du coupon pour retourner la réduction
             $coupon = new WC_Coupon($promo_code);
-            error_log('Coupon ID: ' . $coupon->get_id());
-            
-            if (!$coupon->get_id()) {
-                error_log('Erreur: Code promo invalide (ID non trouvé)');
-                return new WP_Error('invalid_promo', __('Invalid promo code.', 'travel-booking'), array('status' => 400));
-            }
-            
-            // Vérifier la validité du coupon
-            $is_valid = $coupon->is_valid();
-            error_log('Le coupon est-il valide? ' . ($is_valid ? 'Oui' : 'Non'));
-            
-            if (!$is_valid) {
-                // Récupérer les erreurs spécifiques
-                $errors = '';
-                if (method_exists($coupon, 'get_error_messages')) {
-                    $error_messages = $coupon->get_error_messages();
-                    $errors = implode(', ', $error_messages);
-                }
-                error_log('Erreurs de validité du coupon: ' . $errors);
+            if ($coupon->get_id()) {
+                $discount_type = $coupon->get_discount_type();
+                $discount_amount = $coupon->get_amount();
                 
-                return new WP_Error('invalid_promo', __('This promo code is not valid anymore.', 'travel-booking'), array('status' => 400));
+                $discount_percent = ($discount_type === 'percent') 
+                    ? $discount_amount 
+                    : ($discount_amount / $booking->price) * 100;
+                
+                return rest_ensure_response(array(
+                    'success' => true,
+                    'discount' => round($discount_percent, 2),
+                    'code' => $promo_code,
+                    'already_applied' => true
+                ));
             }
-            
-            // Calculer la réduction
-            $discount_type = $coupon->get_discount_type();
-            $discount_amount = $coupon->get_amount();
-            error_log('Type de réduction: ' . $discount_type . ', Montant: ' . $discount_amount);
-            
-            // Appliquer le code promo à la réservation
-            $result = Travel_Booking_Booking::apply_promo_code($token, $promo_code);
-            error_log('Résultat de l\'application: ' . ($result ? 'Succès' : 'Échec'));
-            
-            if (!$result) {
-                error_log('Erreur: Échec de l\'application du code promo');
-                return new WP_Error('apply_failed', __('Failed to apply promo code.', 'travel-booking'), array('status' => 500));
-            }
-            
-            // Calcul du pourcentage de réduction
-            if ($discount_type === 'percent') {
-                $discount_percent = $discount_amount;
-            } else {
-                // Pour les montants fixes, calculer un pourcentage approximatif
-                $discount_percent = ($discount_amount / $booking->price) * 100;
-            }
-            error_log('Pourcentage de réduction final: ' . $discount_percent);
-            
-            $response = array(
-                'success' => true,
-                'discount' => $discount_percent,
-                'code' => $promo_code
-            );
-            error_log('Réponse finale: ' . print_r($response, true));
-            
-            return rest_ensure_response($response);
-        } catch (Exception $e) {
-            error_log('Exception lors du traitement du coupon: ' . $e->getMessage());
-            return new WP_Error('coupon_error', $e->getMessage(), array('status' => 500));
         }
+        
+        // Créer et valider le coupon
+        $coupon = new WC_Coupon($promo_code);
+        
+        if (!$coupon->get_id()) {
+            return new WP_Error('invalid_promo', 'Code promo invalide', array('status' => 400));
+        }
+        
+        // Vérifier la validité du coupon
+        $validation_errors = array();
+        
+        // Vérifier si le coupon est actif
+        if ($coupon->get_status() !== 'publish') {
+            $validation_errors[] = 'Ce code promo n\'est pas actif';
+        }
+        
+        // Vérifier les dates de validité
+        $now = current_time('timestamp');
+        
+        if ($coupon->get_date_expires() && $coupon->get_date_expires()->getTimestamp() < $now) {
+            $validation_errors[] = 'Ce code promo a expiré';
+        }
+        
+        if ($coupon->get_date_created() && $coupon->get_date_created()->getTimestamp() > $now) {
+            $validation_errors[] = 'Ce code promo n\'est pas encore valide';
+        }
+        
+        // Vérifier les limites d'utilisation
+        if ($coupon->get_usage_limit() > 0 && $coupon->get_usage_count() >= $coupon->get_usage_limit()) {
+            $validation_errors[] = 'Ce code promo a atteint sa limite d\'utilisation';
+        }
+        
+        // Vérifier le montant minimum
+        if ($coupon->get_minimum_amount() > 0 && $booking->price < $coupon->get_minimum_amount()) {
+            $validation_errors[] = sprintf(
+                'Montant minimum requis: %s CHF',
+                number_format($coupon->get_minimum_amount(), 2)
+            );
+        }
+        
+        // Vérifier le montant maximum
+        if ($coupon->get_maximum_amount() > 0 && $booking->price > $coupon->get_maximum_amount()) {
+            $validation_errors[] = sprintf(
+                'Montant maximum autorisé: %s CHF',
+                number_format($coupon->get_maximum_amount(), 2)
+            );
+        }
+        
+        if (!empty($validation_errors)) {
+            return new WP_Error('invalid_promo', implode('. ', $validation_errors), array('status' => 400));
+        }
+        
+        // Appliquer le code promo à la réservation
+        $result = Travel_Booking_Booking::apply_promo_code($token, $promo_code);
+        
+        if (!$result) {
+            return new WP_Error('apply_failed', 'Échec de l\'application du code promo', array('status' => 500));
+        }
+        
+        // Calculer la réduction
+        $discount_type = $coupon->get_discount_type();
+        $discount_amount = $coupon->get_amount();
+        
+        if ($discount_type === 'percent') {
+            $discount_percent = $discount_amount;
+        } else {
+            // Pour les montants fixes, calculer un pourcentage
+            $discount_percent = min(($discount_amount / $booking->price) * 100, 100);
+        }
+        
+        return rest_ensure_response(array(
+            'success' => true,
+            'discount' => round($discount_percent, 2),
+            'code' => $promo_code,
+            'discount_type' => $discount_type,
+            'discount_amount' => $discount_amount
+        ));
+        
+    } catch (Exception $e) {
+        error_log('Exception dans apply_promo: ' . $e->getMessage());
+        return new WP_Error('server_error', 'Erreur serveur: ' . $e->getMessage(), array('status' => 500));
     }
+}
     
-/**
+    /**
      * Create WooCommerce order
      */
     public function create_order($request) {

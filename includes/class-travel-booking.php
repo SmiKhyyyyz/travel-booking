@@ -70,6 +70,9 @@ class Travel_Booking {
         // WooCommerce integration
         require_once TRAVEL_BOOKING_PLUGIN_DIR . 'includes/class-travel-booking-woocommerce.php';
         
+        // Security
+        require_once TRAVEL_BOOKING_PLUGIN_DIR . 'includes/class-travel-booking-security.php';
+        
         // Create the loader
         $this->loader = new Travel_Booking_Loader();
     }

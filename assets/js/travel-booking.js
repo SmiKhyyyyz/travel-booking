@@ -412,94 +412,135 @@ if (typeof travel_booking_params === 'undefined') {
     
     /**
      * Apply promo code
-     */
-    /**
- * Apply promo code
+     **/
+/**
+ * Apply promo code - VERSION CORRIGÉE
  */
 function applyPromoCode() {
-    const promoCode = $('#promo-code').val();
+    const promoCode = $('#promo-code').val().trim();
     
     if (!promoCode) {
-        $('#promo-code-message').text('Veuillez entrer un code promo').addClass('travel-booking-promo-code-error').removeClass('travel-booking-promo-code-success');
+        $('#promo-code-message')
+            .text('Veuillez entrer un code promo')
+            .removeClass('travel-booking-promo-code-success')
+            .addClass('travel-booking-promo-code-error');
         return;
     }
     
-    // Log pour le débogage
-    console.log('Tentative d\'application du code promo:', promoCode);
-    console.log('Token utilisé:', travel_booking_params.token);
+    // Vérifier si le token existe
+    if (!travel_booking_params.token) {
+        $('#promo-code-message')
+            .text('Session invalide. Veuillez rafraîchir la page.')
+            .removeClass('travel-booking-promo-code-success')
+            .addClass('travel-booking-promo-code-error');
+        return;
+    }
     
     // Désactiver le bouton pendant la requête
-    $('#apply-promo-code').prop('disabled', true).text('Application...');
+    const $button = $('#apply-promo-code');
+    const originalText = $button.text();
+    $button.prop('disabled', true).text('Application...');
     
-    // IMPORTANT : Utilisez l'URL correcte de l'API REST
-    const apiUrl = '/wp-json/travel-booking/v1/apply-promo';
+    // Préparer les données
+    const requestData = {
+        token: travel_booking_params.token,
+        code: promoCode
+    };
     
+    // Utiliser l'API REST de WordPress
     $.ajax({
-        url: apiUrl,
+        url: travel_booking_params.rest_url + 'travel-booking/v1/apply-promo',
         type: 'POST',
-        data: JSON.stringify({
-            token: travel_booking_params.token,
-            code: promoCode
-        }),
+        data: JSON.stringify(requestData),
         contentType: 'application/json',
         dataType: 'json',
+        beforeSend: function(xhr) {
+            // Ajouter le nonce dans les headers
+            xhr.setRequestHeader('X-WP-Nonce', travel_booking_params.rest_nonce);
+        },
         success: function(response) {
-            console.log('Réponse du serveur:', response);
-            
             if (response.success) {
                 $('#promo-code-message')
-                    .text('Code promo appliqué: ' + response.discount + '% de réduction')
+                    .text(`Code promo appliqué: ${response.discount}% de réduction`)
                     .removeClass('travel-booking-promo-code-error')
                     .addClass('travel-booking-promo-code-success');
                 
                 // Mettre à jour le prix affiché
-                const priceElement = $('#travel-booking-price');
-                const originalText = priceElement.text();
-                const originalPrice = parseFloat(originalText.replace(/[^\d.]/g, ''));
+                updatePriceDisplay(response.discount);
                 
-                if (!priceElement.attr('data-original-price')) {
-                    priceElement.attr('data-original-price', originalPrice);
-                }
-                
-                const discountAmount = originalPrice * (response.discount / 100);
-                const discountedPrice = originalPrice - discountAmount;
-                
-                priceElement.html(
-                    '<span class="original-price" style="text-decoration: line-through;">' + 
-                    originalPrice.toFixed(2) + ' CHF</span> ' +
-                    '<span class="discounted-price">' + discountedPrice.toFixed(2) + ' CHF</span>'
-                );
             } else {
+                const errorMessage = response.data && response.data.message 
+                    ? response.data.message 
+                    : 'Code promo invalide';
+                    
                 $('#promo-code-message')
-                    .text(response.data && response.data.message || 'Code promo invalide')
-                    .addClass('travel-booking-promo-code-error')
-                    .removeClass('travel-booking-promo-code-success');
+                    .text(errorMessage)
+                    .removeClass('travel-booking-promo-code-success')
+                    .addClass('travel-booking-promo-code-error');
             }
         },
         error: function(xhr, status, error) {
-            console.error('Erreur AJAX:', xhr.responseText);
-            
             let errorMessage = 'Erreur lors de l\'application du code promo';
             
             try {
                 const response = JSON.parse(xhr.responseText);
-                if (response.message || (response.data && response.data.message)) {
-                    errorMessage = response.message || response.data.message;
+                if (response.message) {
+                    errorMessage = response.message;
                 }
             } catch (e) {
-                console.error('Erreur lors de l\'analyse de la réponse JSON:', e);
+                console.error('Erreur parsing JSON:', e);
             }
             
             $('#promo-code-message')
                 .text(errorMessage)
-                .addClass('travel-booking-promo-code-error')
-                .removeClass('travel-booking-promo-code-success');
+                .removeClass('travel-booking-promo-code-success')
+                .addClass('travel-booking-promo-code-error');
         },
         complete: function() {
             // Réactiver le bouton
-            $('#apply-promo-code').prop('disabled', false).text('Appliquer');
+            $button.prop('disabled', false).text(originalText);
         }
     });
+}
+
+/**
+ * Mettre à jour l'affichage du prix avec la réduction
+ */
+function updatePriceDisplay(discountPercent) {
+    const priceElement = $('#travel-booking-price');
+    const originalPrice = parseFloat(priceElement.attr('data-original-price') || priceElement.text().replace(/[^\d.]/g, ''));
+    
+    // Sauvegarder le prix original si pas déjà fait
+    if (!priceElement.attr('data-original-price')) {
+        priceElement.attr('data-original-price', originalPrice);
+    }
+    
+    const discountAmount = originalPrice * (discountPercent / 100);
+    const discountedPrice = originalPrice - discountAmount;
+    
+    priceElement.html(`
+        <span class="original-price" style="text-decoration: line-through; color: #999;">${originalPrice.toFixed(2)} CHF</span><br>
+        <span class="discounted-price" style="font-weight: bold; color: #27ae60;">${discountedPrice.toFixed(2)} CHF</span>
+    `);
+}
+
+/**
+ * Initialiser les paramètres manquants
+ */
+function initTravelBookingParams() {
+    // S'assurer que les paramètres REST sont définis
+    if (typeof travel_booking_params === 'undefined') {
+        travel_booking_params = {};
+    }
+    
+    // Ajouter les URLs REST si manquantes
+    if (!travel_booking_params.rest_url) {
+        travel_booking_params.rest_url = wpApiSettings.root || '/wp-json/';
+    }
+    
+    if (!travel_booking_params.rest_nonce) {
+        travel_booking_params.rest_nonce = wpApiSettings.nonce || '';
+    }
 }
     
     /**

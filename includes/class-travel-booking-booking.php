@@ -57,8 +57,11 @@ class Travel_Booking_Booking {
             array_push($sql_args, $search_term, $search_term, $search_term, $search_term, $search_term);
         }
         
-        // Add orderby
-        $sql .= " ORDER BY {$args['orderby']} {$args['order']}";
+        // Validation des paramètres ORDER BY
+        $allowed_orderby = ['id', 'name', 'created_at', 'price'];
+        $orderby = in_array($args['orderby'], $allowed_orderby) ? $args['orderby'] : 'id';
+        $order = in_array(strtoupper($args['order']), ['ASC', 'DESC']) ? $args['order'] : 'DESC';
+        $sql .= " ORDER BY {$orderby} {$order}";
         
         // Add limit and offset
         if ($args['limit'] > 0) {

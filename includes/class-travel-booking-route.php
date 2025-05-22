@@ -34,8 +34,11 @@ class Travel_Booking_Route {
             $sql_args[] = $args['vehicle_id'];
         }
         
-        // Add orderby
-        $sql .= " ORDER BY {$args['orderby']} {$args['order']}";
+        // Validation des paramètres ORDER BY
+        $allowed_orderby = ['id', 'name', 'created_at', 'price'];
+        $orderby = in_array($args['orderby'], $allowed_orderby) ? $args['orderby'] : 'id';
+        $order = in_array(strtoupper($args['order']), ['ASC', 'DESC']) ? $args['order'] : 'DESC';
+        $sql .= " ORDER BY {$orderby} {$order}";
         
         if (!empty($sql_args)) {
             $routes = $wpdb->get_results(

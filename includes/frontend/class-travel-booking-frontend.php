@@ -48,36 +48,45 @@ class Travel_Booking_Frontend {
     }
     
     /**
- * Register the JavaScript for the public-facing side of the site.
- */
-public function enqueue_scripts() {
-    wp_enqueue_script(
-        'travel-booking',
-        TRAVEL_BOOKING_PLUGIN_URL . 'assets/js/travel-booking.js',
-        array('jquery'),
-        $this->version,
-        true
-    );
-    
-    // AJOUTEZ CE CODE S'IL EST MANQUANT
-    wp_localize_script('travel-booking', 'travel_booking_params', array(
-        'ajax_url' => admin_url('admin-ajax.php'),
-        'nonce' => wp_create_nonce('travel_booking_nonce'),
-        'default_location' => get_option('travel_booking_default_location', 'Geneva, Switzerland'),
-        'currency_symbol' => get_woocommerce_currency_symbol(),
-        'i18n' => array(
-            'select_vehicle' => __('Select Vehicle', 'travel-booking'),
-            'loading' => __('Loading...', 'travel-booking'),
-            'error' => __('Error', 'travel-booking'),
-            'no_vehicles' => __('No vehicles available for the selected criteria.', 'travel-booking'),
-            'calculate_first' => __('Please calculate the route first.', 'travel-booking'),
-            'fill_required' => __('Please fill in all required fields.', 'travel-booking'),
-            'confirm_selection' => __('Are you sure you want to select this vehicle?', 'travel-booking'),
-            'proceed_payment' => __('Proceed to Payment', 'travel-booking'),
-            'processing' => __('Processing...', 'travel-booking')
-        )
-    ));
-}
+     * Register the JavaScript for the public-facing side - VERSION CORRIGÉE
+     */
+    public function enqueue_scripts() {
+        wp_enqueue_script(
+            'travel-booking',
+            TRAVEL_BOOKING_PLUGIN_URL . 'assets/js/travel-booking.js',
+            array('jquery'),
+            $this->version,
+            true
+        );
+        
+        // Récupérer le token depuis l'URL si disponible
+        $token = isset($_GET['token']) ? sanitize_text_field($_GET['token']) : '';
+        
+        // Paramètres de localisation améliorés
+        wp_localize_script('travel-booking', 'travel_booking_params', array(
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'rest_url' => rest_url(), // AJOUT IMPORTANT
+            'nonce' => wp_create_nonce('travel_booking_nonce'),
+            'rest_nonce' => wp_create_nonce('wp_rest'), // AJOUT IMPORTANT
+            'token' => $token, // AJOUT IMPORTANT
+            'default_location' => get_option('travel_booking_default_location', 'Geneva, Switzerland'),
+            'currency_symbol' => function_exists('get_woocommerce_currency_symbol') ? get_woocommerce_currency_symbol() : 'CHF',
+            'i18n' => array(
+                'select_vehicle' => __('Select Vehicle', 'travel-booking'),
+                'loading' => __('Loading...', 'travel-booking'),
+                'error' => __('Error', 'travel-booking'),
+                'no_vehicles' => __('No vehicles available for the selected criteria.', 'travel-booking'),
+                'calculate_first' => __('Please calculate the route first.', 'travel-booking'),
+                'fill_required' => __('Please fill in all required fields.', 'travel-booking'),
+                'confirm_selection' => __('Are you sure you want to select this vehicle?', 'travel-booking'),
+                'proceed_payment' => __('Proceed to Payment', 'travel-booking'),
+                'processing' => __('Processing...', 'travel-booking')
+            )
+        ));
+        
+        // Enregistrer le script API REST de WordPress
+        wp_enqueue_script('wp-api');
+    }
     
     /**
      * AJAX handler for getting available vehicles
