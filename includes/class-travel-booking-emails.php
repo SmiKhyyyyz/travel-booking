@@ -1,6 +1,6 @@
 <?php
 /**
- * Travel Booking Email System
+ * Travel Booking Email System - VERSION MISE À JOUR
  */
 
 // If this file is called directly, abort.
@@ -134,10 +134,14 @@ class Travel_Booking_Emails {
      * Fonction générique pour envoyer un email
      */
     private static function send_email($to, $subject, $template, $data) {
+        // Récupérer les paramètres email depuis les options
+        $from_name = get_option('travel_booking_email_from_name', get_bloginfo('name'));
+        $from_email = get_option('travel_booking_email_from_email', get_option('admin_email'));
+        
         // Headers pour l'email HTML
         $headers = array(
             'Content-Type: text/html; charset=UTF-8',
-            'From: ' . get_bloginfo('name') . ' <' . get_option('admin_email') . '>'
+            'From: ' . $from_name . ' <' . $from_email . '>'
         );
         
         // Générer le contenu HTML de l'email
@@ -156,18 +160,19 @@ class Travel_Booking_Emails {
     private static function get_email_template($template, $data) {
         extract($data);
         
-        $company_name = get_bloginfo('name');
+        $company_name = get_option('travel_booking_email_from_name', get_bloginfo('name'));
         $company_logo = get_option('travel_booking_email_logo', '');
+        $footer_text = get_option('travel_booking_email_footer_text', '');
         
         switch ($template) {
             case 'booking_confirmation':
-                return self::booking_confirmation_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo);
+                return self::booking_confirmation_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo, $footer_text);
                 
             case 'booking_confirmed':
-                return self::booking_confirmed_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo);
+                return self::booking_confirmed_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo, $footer_text);
                 
             case 'booking_cancelled':
-                return self::booking_cancelled_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo);
+                return self::booking_cancelled_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo, $footer_text);
                 
             default:
                 return '';
@@ -177,9 +182,19 @@ class Travel_Booking_Emails {
     /**
      * Template email de confirmation de commande
      */
-    private static function booking_confirmation_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo) {
+    private static function booking_confirmation_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo, $footer_text) {
         $travel_date = date_i18n('d/m/Y à H:i', strtotime($booking->travel_date));
         $price = number_format($booking->price, 2) . ' CHF';
+        
+        $logo_html = '';
+        if (!empty($company_logo)) {
+            $logo_html = '<img src="' . esc_url($company_logo) . '" alt="' . esc_attr($company_name) . '" style="max-height: 60px; margin-bottom: 15px;">';
+        }
+        
+        $footer_html = '';
+        if (!empty($footer_text)) {
+            $footer_html = '<p>' . esc_html($footer_text) . '</p>';
+        }
         
         return '
         <!DOCTYPE html>
@@ -203,7 +218,7 @@ class Travel_Booking_Emails {
         <body>
             <div class="container">
                 <div class="header">
-                    ' . ($company_logo ? '<img src="' . $company_logo . '" alt="' . $company_name . '" style="max-height: 60px; margin-bottom: 15px;">' : '') . '
+                    ' . $logo_html . '
                     <h1>Confirmation de votre réservation</h1>
                     <p>Merci pour votre commande !</p>
                 </div>
@@ -263,6 +278,7 @@ class Travel_Booking_Emails {
                 <div class="footer">
                     <p>&copy; ' . date('Y') . ' ' . $company_name . ' - Tous droits réservés</p>
                     <p>Email: ' . get_option('admin_email') . '</p>
+                    ' . $footer_html . '
                 </div>
             </div>
         </body>
@@ -272,9 +288,19 @@ class Travel_Booking_Emails {
     /**
      * Template email de confirmation de réservation
      */
-    private static function booking_confirmed_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo) {
+    private static function booking_confirmed_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo, $footer_text) {
         $travel_date = date_i18n('d/m/Y à H:i', strtotime($booking->travel_date));
         $price = number_format($booking->price, 2) . ' CHF';
+        
+        $logo_html = '';
+        if (!empty($company_logo)) {
+            $logo_html = '<img src="' . esc_url($company_logo) . '" alt="' . esc_attr($company_name) . '" style="max-height: 60px; margin-bottom: 15px;">';
+        }
+        
+        $footer_html = '';
+        if (!empty($footer_text)) {
+            $footer_html = '<p>' . esc_html($footer_text) . '</p>';
+        }
         
         return '
         <!DOCTYPE html>
@@ -298,7 +324,7 @@ class Travel_Booking_Emails {
         <body>
             <div class="container">
                 <div class="header">
-                    ' . ($company_logo ? '<img src="' . $company_logo . '" alt="' . $company_name . '" style="max-height: 60px; margin-bottom: 15px;">' : '') . '
+                    ' . $logo_html . '
                     <h1>🚗 Votre transport est confirmé !</h1>
                     <p>Tout est prêt pour votre voyage</p>
                 </div>
@@ -352,6 +378,7 @@ class Travel_Booking_Emails {
                 <div class="footer">
                     <p>&copy; ' . date('Y') . ' ' . $company_name . ' - Tous droits réservés</p>
                     <p>Email: ' . get_option('admin_email') . ' | Urgences: [VOTRE NUMÉRO D\'URGENCE]</p>
+                    ' . $footer_html . '
                 </div>
             </div>
         </body>
@@ -361,7 +388,17 @@ class Travel_Booking_Emails {
     /**
      * Template email d'annulation
      */
-    private static function booking_cancelled_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo) {
+    private static function booking_cancelled_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo, $footer_text) {
+        $logo_html = '';
+        if (!empty($company_logo)) {
+            $logo_html = '<img src="' . esc_url($company_logo) . '" alt="' . esc_attr($company_name) . '" style="max-height: 60px; margin-bottom: 15px;">';
+        }
+        
+        $footer_html = '';
+        if (!empty($footer_text)) {
+            $footer_html = '<p>' . esc_html($footer_text) . '</p>';
+        }
+        
         return '
         <!DOCTYPE html>
         <html>
@@ -379,6 +416,7 @@ class Travel_Booking_Emails {
         <body>
             <div class="container">
                 <div class="header">
+                    ' . $logo_html . '
                     <h1>Annulation de votre réservation</h1>
                 </div>
                 
@@ -395,6 +433,7 @@ class Travel_Booking_Emails {
                 <div class="footer">
                     <p>&copy; ' . date('Y') . ' ' . $company_name . '</p>
                     <p>Email: ' . get_option('admin_email') . '</p>
+                    ' . $footer_html . '
                 </div>
             </div>
         </body>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin settings management
+ * Admin settings management - VERSION CORRIGÉE
  */
 
 // If this file is called directly, abort.
@@ -13,11 +13,11 @@ class Travel_Booking_Admin_Settings {
      * Handle settings page actions
      */
     public static function page_actions() {
-        // Register settings
+        // Register settings - GÉNÉRAL
         register_setting('travel_booking_general', 'travel_booking_google_maps_api_key');
         register_setting('travel_booking_general', 'travel_booking_default_location');
         
-        // Register settings sections
+        // Register settings sections - GÉNÉRAL
         add_settings_section(
             'travel_booking_general_section',
             __('General Settings', 'travel-booking'),
@@ -25,7 +25,7 @@ class Travel_Booking_Admin_Settings {
             'travel_booking_general'
         );
         
-        // Register settings fields
+        // Register settings fields - GÉNÉRAL
         add_settings_field(
             'travel_booking_google_maps_api_key',
             __('Google Maps API Key', 'travel-booking'),
@@ -42,7 +42,7 @@ class Travel_Booking_Admin_Settings {
             'travel_booking_general_section'
         );
         
-        // Page selection settings
+        // Page selection settings - PAGES
         register_setting('travel_booking_pages', 'travel_booking_booking_page_id');
         register_setting('travel_booking_pages', 'travel_booking_summary_page_id');
         
@@ -69,7 +69,7 @@ class Travel_Booking_Admin_Settings {
             'travel_booking_pages_section'
         );
         
-        // WooCommerce settings
+        // WooCommerce settings - WOOCOMMERCE
         register_setting('travel_booking_woocommerce', 'travel_booking_product_id');
         
         add_settings_section(
@@ -86,7 +86,14 @@ class Travel_Booking_Admin_Settings {
             'travel_booking_woocommerce',
             'travel_booking_woocommerce_section'
         );
-        // Nouvelle section pour les emails
+        
+        // ===== AJOUT DE LA SECTION EMAILS =====
+        // Register settings - EMAILS
+        register_setting('travel_booking_emails', 'travel_booking_email_logo');
+        register_setting('travel_booking_emails', 'travel_booking_email_from_name');
+        register_setting('travel_booking_emails', 'travel_booking_email_from_email');
+        register_setting('travel_booking_emails', 'travel_booking_email_footer_text');
+        
         add_settings_section(
             'travel_booking_emails_section',
             __('Email Settings', 'travel-booking'),
@@ -94,11 +101,35 @@ class Travel_Booking_Admin_Settings {
             'travel_booking_emails'
         );
 
-        // Nouveau champ pour le logo des emails
+        // Champs pour les emails
         add_settings_field(
             'travel_booking_email_logo',
             __('Email Logo URL', 'travel-booking'),
             array(__CLASS__, 'email_logo_callback'),
+            'travel_booking_emails',
+            'travel_booking_emails_section'
+        );
+        
+        add_settings_field(
+            'travel_booking_email_from_name',
+            __('From Name', 'travel-booking'),
+            array(__CLASS__, 'email_from_name_callback'),
+            'travel_booking_emails',
+            'travel_booking_emails_section'
+        );
+        
+        add_settings_field(
+            'travel_booking_email_from_email',
+            __('From Email', 'travel-booking'),
+            array(__CLASS__, 'email_from_email_callback'),
+            'travel_booking_emails',
+            'travel_booking_emails_section'
+        );
+        
+        add_settings_field(
+            'travel_booking_email_footer_text',
+            __('Footer Text', 'travel-booking'),
+            array(__CLASS__, 'email_footer_text_callback'),
             'travel_booking_emails',
             'travel_booking_emails_section'
         );
@@ -134,6 +165,13 @@ class Travel_Booking_Admin_Settings {
      */
     public static function woocommerce_section_callback() {
         echo '<p>' . __('Configure WooCommerce integration settings.', 'travel-booking') . '</p>';
+    }
+    
+    /**
+     * Emails section callback
+     */
+    public static function emails_section_callback() {
+        echo '<p>' . __('Configure email settings for booking confirmations and notifications.', 'travel-booking') . '</p>';
     }
     
     /**
@@ -201,17 +239,44 @@ class Travel_Booking_Admin_Settings {
         }
     }
 
-    // Callback pour la section emails
-    public static function emails_section_callback() {
-        echo '<p>' . __('Configure email settings for booking confirmations.', 'travel-booking') . '</p>';
-    }
-
-    // Callback pour le logo email
+    /**
+     * Email logo callback
+     */
     public static function email_logo_callback() {
         $logo_url = get_option('travel_booking_email_logo', '');
         
         echo '<input type="url" name="travel_booking_email_logo" value="' . esc_attr($logo_url) . '" class="regular-text">';
         echo '<p class="description">' . __('URL of your company logo for emails (optional).', 'travel-booking') . '</p>';
+    }
+    
+    /**
+     * Email from name callback
+     */
+    public static function email_from_name_callback() {
+        $from_name = get_option('travel_booking_email_from_name', get_bloginfo('name'));
+        
+        echo '<input type="text" name="travel_booking_email_from_name" value="' . esc_attr($from_name) . '" class="regular-text">';
+        echo '<p class="description">' . __('The name that will appear as sender in emails.', 'travel-booking') . '</p>';
+    }
+    
+    /**
+     * Email from email callback
+     */
+    public static function email_from_email_callback() {
+        $from_email = get_option('travel_booking_email_from_email', get_option('admin_email'));
+        
+        echo '<input type="email" name="travel_booking_email_from_email" value="' . esc_attr($from_email) . '" class="regular-text">';
+        echo '<p class="description">' . __('The email address that will appear as sender.', 'travel-booking') . '</p>';
+    }
+    
+    /**
+     * Email footer text callback
+     */
+    public static function email_footer_text_callback() {
+        $footer_text = get_option('travel_booking_email_footer_text', '');
+        
+        echo '<textarea name="travel_booking_email_footer_text" rows="3" class="large-text">' . esc_textarea($footer_text) . '</textarea>';
+        echo '<p class="description">' . __('Additional text to display in email footer (optional).', 'travel-booking') . '</p>';
     }
     
     /**
