@@ -86,6 +86,22 @@ class Travel_Booking_Admin_Settings {
             'travel_booking_woocommerce',
             'travel_booking_woocommerce_section'
         );
+        // Nouvelle section pour les emails
+        add_settings_section(
+            'travel_booking_emails_section',
+            __('Email Settings', 'travel-booking'),
+            array(__CLASS__, 'emails_section_callback'),
+            'travel_booking_emails'
+        );
+
+        // Nouveau champ pour le logo des emails
+        add_settings_field(
+            'travel_booking_email_logo',
+            __('Email Logo URL', 'travel-booking'),
+            array(__CLASS__, 'email_logo_callback'),
+            'travel_booking_emails',
+            'travel_booking_emails_section'
+        );
     }
     
     /**
@@ -183,6 +199,19 @@ class Travel_Booking_Admin_Settings {
         } else {
             echo '<p><a href="' . admin_url('post-new.php?post_type=page') . '" class="button">' . __('Create New Page', 'travel-booking') . '</a></p>';
         }
+    }
+
+    // Callback pour la section emails
+    public static function emails_section_callback() {
+        echo '<p>' . __('Configure email settings for booking confirmations.', 'travel-booking') . '</p>';
+    }
+
+    // Callback pour le logo email
+    public static function email_logo_callback() {
+        $logo_url = get_option('travel_booking_email_logo', '');
+        
+        echo '<input type="url" name="travel_booking_email_logo" value="' . esc_attr($logo_url) . '" class="regular-text">';
+        echo '<p class="description">' . __('URL of your company logo for emails (optional).', 'travel-booking') . '</p>';
     }
     
     /**

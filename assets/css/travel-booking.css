@@ -603,3 +603,332 @@ input[type="time"] {
     text-align: center !important;
   }
 }
+
+/**
+ * Travel Booking Summary - Design moderne inspiré du 3e screenshot
+ */
+
+/* Recentrer les informations de route */
+.travel-results {
+  margin: 40px auto !important;
+  padding: 30px !important;
+  background: white !important;
+  border-radius: 15px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  max-width: 800px !important;
+  text-align: center !important;
+}
+
+.travel-results h3 {
+  margin-top: 0 !important;
+  margin-bottom: 30px !important;
+  color: #2c3e50 !important;
+  font-size: 1.8em !important;
+  font-weight: 600 !important;
+}
+
+.travel-booking-route-info {
+  display: flex !important;
+  justify-content: center !important;
+  gap: 50px !important;
+  flex-wrap: wrap !important;
+  margin-top: 20px !important;
+}
+
+.travel-booking-route-info-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 20px !important;
+  background: #f8f9fa !important;
+  border-radius: 12px !important;
+  min-width: 150px !important;
+}
+
+.travel-booking-route-info-label {
+  font-weight: bold !important;
+  color: #6c757d !important;
+  margin-bottom: 8px !important;
+  font-size: 0.9em !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.travel-booking-route-info-value {
+  font-size: 1.4em !important;
+  font-weight: bold !important;
+  color: #d3b27f !important;
+}
+
+/* Design moderne pour la page de récapitulatif */
+.travel-booking-container {
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 20px !important;
+}
+
+/* Layout en deux colonnes pour le récapitulatif */
+.travel-booking-summary {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 30px !important;
+  margin-top: 30px !important;
+}
+
+/* Colonne de gauche - Résumé du voyage */
+/* Colonnes avec même padding pour alignement parfait */
+.travel-booking-summary-left,
+.travel-booking-summary-right {
+  border-radius: 20px !important;
+  padding: 25px !important; /* Même padding pour les deux colonnes */
+  color: white !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.travel-booking-summary-left {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+}
+
+.travel-booking-summary-right {
+  background: #2c3e50 !important;
+}
+
+.travel-booking-summary-left::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="white" opacity="0.1"/><circle cx="80" cy="40" r="1" fill="white" opacity="0.1"/><circle cx="40" cy="70" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>') !important;
+  opacity: 0.1 !important;
+  pointer-events: none !important;
+}
+
+/* Titres uniformisés pour les deux colonnes */
+.travel-booking-summary-left h2,
+.travel-booking-summary-right h2 {
+  font-size: 1.6em !important; /* Même taille pour les deux */
+  margin-bottom: 15px !important; /* Même marge pour les deux */
+  font-weight: 700 !important; /* Même poids pour les deux */
+  text-align: center !important; /* Même alignement pour les deux */
+  position: relative !important;
+  z-index: 1 !important;
+  margin-top: 0 !important; /* Pas de marge en haut */
+  padding-top: 0 !important; /* Pas de padding en haut */
+}
+
+.travel-booking-trip-details {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.travel-booking-trip-detail-item {
+  margin-bottom: 8px !important; /* Réduit encore de 12px à 8px */
+  padding: 8px 0 !important; /* Réduit de 10px à 8px */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.travel-booking-trip-detail-item:last-child {
+  border-bottom: none !important;
+}
+
+.travel-booking-trip-detail-label {
+  font-size: 0.9em !important;
+  opacity: 0.8 !important;
+  margin-bottom: 5px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.travel-booking-trip-detail-value {
+  font-size: 1.1em !important;
+  font-weight: 600 !important;
+}
+
+.travel-booking-vehicle-showcase {
+  text-align: center !important;
+  margin: 0 0 15px 0 !important; /* Marge réduite après l'image */
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.travel-booking-vehicle-showcase img {
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: 280px !important;
+  object-fit: contain !important;
+  filter: brightness(1.1) !important;
+}
+
+.travel-booking-price-highlight {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 15px !important;
+  padding: 12px !important; /* Réduit encore de 15px à 12px */
+  margin-top: 10px !important; /* Réduit de 15px à 10px */
+  text-align: center !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+.travel-booking-price-highlight .travel-booking-trip-detail-value {
+  font-size: 2em !important;
+  color: #ffd700 !important;
+}
+
+/* Colonne de droite - Formulaire client */
+/* Suppression de l'ancien style pour la colonne droite */
+
+.travel-booking-form {
+  max-width: none !important;
+}
+
+.travel-booking-form-row {
+  margin-bottom: 20px !important;
+}
+
+.travel-booking-form-group {
+  margin-bottom: 20px !important;
+}
+
+.travel-booking-form-group label {
+  display: block !important;
+  margin-bottom: 8px !important;
+  font-weight: 500 !important;
+  color: #ecf0f1 !important;
+}
+
+.travel-booking-form-group input,
+.travel-booking-form-group textarea,
+.travel-booking-form-group select {
+  width: 100% !important;
+  padding: 12px 15px !important;
+  border: none !important;
+  border-radius: 8px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #2c3e50 !important;
+  font-size: 14px !important;
+  transition: all 0.3s ease !important;
+}
+
+.travel-booking-form-group input:focus,
+.travel-booking-form-group textarea:focus,
+.travel-booking-form-group select:focus {
+  background: white !important;
+  box-shadow: 0 0 0 3px rgba(211, 178, 127, 0.3) !important;
+  outline: none !important;
+}
+
+.travel-booking-form-group textarea {
+  height: 80px !important;
+  resize: vertical !important;
+}
+
+/* Section code promo */
+.travel-booking-promo-section {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  padding: 20px !important;
+  margin: 25px 0 !important;
+}
+
+.travel-booking-promo-code-input {
+  display: flex !important;
+  gap: 10px !important;
+  margin-top: 10px !important;
+}
+
+.travel-booking-promo-code-input input {
+  flex: 1 !important;
+  margin-bottom: 0 !important;
+}
+
+.travel-booking-promo-code-input button {
+  background: #d3b27f !important;
+  color: white !important;
+  border: none !important;
+  padding: 12px 20px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  white-space: nowrap !important;
+}
+
+.travel-booking-promo-code-input button:hover {
+  background: #b89154 !important;
+  transform: translateY(-1px) !important;
+}
+
+.travel-booking-promo-code-message {
+  margin-top: 10px !important;
+  padding: 8px 12px !important;
+  border-radius: 6px !important;
+  font-size: 0.9em !important;
+}
+
+.travel-booking-promo-code-success {
+  background: rgba(76, 175, 80, 0.2) !important;
+  color: #4caf50 !important;
+  border: 1px solid rgba(76, 175, 80, 0.3) !important;
+}
+
+.travel-booking-promo-code-error {
+  background: rgba(244, 67, 54, 0.2) !important;
+  color: #f44336 !important;
+  border: 1px solid rgba(244, 67, 54, 0.3) !important;
+}
+
+/* Bouton principal */
+.travel-booking-button-primary {
+  width: 100% !important;
+  padding: 15px !important;
+  background: #d3b27f !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 12px !important;
+  font-size: 1.1em !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: all 0.3s ease !important;
+  margin-top: 20px !important;
+}
+
+.travel-booking-button-primary:hover {
+  background: #b89154 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 20px rgba(211, 178, 127, 0.3) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .travel-booking-summary {
+    grid-template-columns: 1fr !important;
+    gap: 20px !important;
+  }
+  
+  .travel-booking-summary-left,
+  .travel-booking-summary-right {
+    padding: 25px !important;
+  }
+  
+  .travel-booking-route-info {
+    gap: 20px !important;
+  }
+  
+  .travel-booking-route-info-item {
+    min-width: 120px !important;
+    padding: 15px !important;
+  }
+}
+
+/* Masquer les anciens styles de summary */
+.travel-booking-summary-section {
+  display: none !important;
+}
+
+/* Afficher le nouveau design */
+.travel-booking-summary-modern {
+  display: block !important;
+}

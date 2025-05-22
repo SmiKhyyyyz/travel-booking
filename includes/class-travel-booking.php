@@ -72,6 +72,9 @@ class Travel_Booking {
         
         // Security
         require_once TRAVEL_BOOKING_PLUGIN_DIR . 'includes/class-travel-booking-security.php';
+
+        // Mail
+        require_once TRAVEL_BOOKING_PLUGIN_DIR . 'includes/class-travel-booking-emails.php';
         
         // Create the loader
         $this->loader = new Travel_Booking_Loader();

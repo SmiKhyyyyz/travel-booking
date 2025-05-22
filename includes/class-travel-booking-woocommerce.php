@@ -24,6 +24,9 @@ class Travel_Booking_WooCommerce {
         
         // Update booking status when order status changes
         add_action('woocommerce_order_status_changed', array($this, 'update_booking_status'), 10, 4);
+
+        // Initialiser le système d'emails
+        Travel_Booking_Emails::init();
     }
     
     /**
