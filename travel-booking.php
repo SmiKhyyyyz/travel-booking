@@ -3,7 +3,7 @@
  * Plugin Name: Travel Booking System
  * Description: A comprehensive travel booking system for transportation services with WooCommerce integration.
  * Version: 1.0.0
- * Author: Pixel Agency
+ * Author: Pixl Agency
  * Text Domain: travel-booking
  * Domain Path: /languages
  * Requires at least: 5.8
