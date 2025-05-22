@@ -92,8 +92,12 @@ class Travel_Booking_Frontend {
      * AJAX handler for getting available vehicles
      */
     public function get_available_vehicles() {
+        error_log('=== get_available_vehicles appelée ===');
+        error_log('GET params: ' . print_r($_GET, true));
+    
         // Check nonce
         if (!isset($_GET['nonce']) || !wp_verify_nonce($_GET['nonce'], 'travel_booking_nonce')) {
+            error_log('Nonce check failed');
             wp_send_json_error(array('message' => __('Security check failed.', 'travel-booking')));
             exit;
         }

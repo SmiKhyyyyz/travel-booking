@@ -190,6 +190,18 @@ if (!defined('ABSPATH')) {
                     </div>
                 <?php endif; ?>
                 
+                <!-- AJOUTER CETTE SECTION PROMO CODE -->
+                <div class="travel-booking-promo-code" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                    <div class="travel-booking-form-group">
+                        <label for="promo-code-final"><?php _e('Promo Code', 'travel-booking'); ?></label>
+                        <div class="travel-booking-promo-code-input">
+                            <input type="text" id="promo-code-final" name="promo-code" placeholder="<?php _e('Enter promo code', 'travel-booking'); ?>" value="<?php echo esc_attr($booking->promo_code ?? ''); ?>">
+                            <button type="button" id="apply-promo-code-final" class="travel-booking-button"><?php _e('Apply', 'travel-booking'); ?></button>
+                        </div>
+                        <div id="promo-code-message-final" class="travel-booking-promo-code-message"></div>
+                    </div>
+                </div>
+                
                 <div class="travel-booking-form-row">
                     <button type="button" id="create-order" class="travel-booking-button travel-booking-button-primary"><?php _e('Proceed to Payment', 'travel-booking'); ?></button>
                 </div>

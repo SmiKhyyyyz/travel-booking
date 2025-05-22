@@ -68,12 +68,89 @@ if (typeof travel_booking_params === 'undefined') {
             selectVehicle(vehicleData);
         });
     }
+
+    /**
+ * Apply promo code - Version pour les infos client finales
+ */
+function applyPromoCodeFinal() {
+    const promoCode = $('#promo-code-final').val().trim();
+    
+    if (!promoCode) {
+        $('#promo-code-message-final')
+            .text('Veuillez entrer un code promo')
+            .removeClass('travel-booking-promo-code-success')
+            .addClass('travel-booking-promo-code-error');
+        return;
+    }
+    
+    // Utiliser le même code que applyPromoCode mais avec les bons IDs
+    const $button = $('#apply-promo-code-final');
+    const originalText = $button.text();
+    $button.prop('disabled', true).text('Application...');
+    
+    const requestData = {
+        token: travel_booking_params.token,
+        code: promoCode
+    };
+    
+    $.ajax({
+        url: '/wp-json/travel-booking/v1/apply-promo',
+        type: 'POST',
+        data: JSON.stringify(requestData),
+        contentType: 'application/json',
+        dataType: 'json',
+        beforeSend: function(xhr) {
+            xhr.setRequestHeader('X-WP-Nonce', travel_booking_params.rest_nonce);
+        },
+        success: function(response) {
+            if (response.success) {
+                $('#promo-code-message-final')
+                    .text(`Code promo appliqué: ${response.discount}% de réduction`)
+                    .removeClass('travel-booking-promo-code-error')
+                    .addClass('travel-booking-promo-code-success');
+                
+                updatePriceDisplay(response.discount);
+            } else {
+                const errorMessage = response.data && response.data.message 
+                    ? response.data.message 
+                    : 'Code promo invalide';
+                    
+                $('#promo-code-message-final')
+                    .text(errorMessage)
+                    .removeClass('travel-booking-promo-code-success')
+                    .addClass('travel-booking-promo-code-error');
+            }
+        },
+        error: function(xhr, status, error) {
+            let errorMessage = 'Erreur lors de l\'application du code promo';
+            
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.message) {
+                    errorMessage = response.message;
+                }
+            } catch (e) {
+                console.error('Erreur parsing JSON:', e);
+            }
+            
+            $('#promo-code-message-final')
+                .text(errorMessage)
+                .removeClass('travel-booking-promo-code-success')
+                .addClass('travel-booking-promo-code-error');
+        },
+        complete: function() {
+            $button.prop('disabled', false).text(originalText);
+        }
+    });
+}
     
     /**
      * Initialize booking summary
      */
 
-    function initBookingSummary() {
+function initBookingSummary() {
+    console.log('=== initBookingSummary appelée ===');
+    
     // Récupérer le token de l'URL
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
@@ -81,39 +158,49 @@ if (typeof travel_booking_params === 'undefined') {
     // Si le travel_booking_params n'existe pas encore, le créer
     if (typeof travel_booking_params === 'undefined') {
         window.travel_booking_params = {
-            // IMPORTANT : Utilisez l'URL correcte de l'API REST
-            ajax_url: '/wp-json/travel-booking/v1/apply-promo',
+            ajax_url: '/wp-admin/admin-ajax.php',
             token: token
         };
     } else {
         // Sinon, simplement ajouter le token
         travel_booking_params.token = token;
         // Assurez-vous que l'URL est correcte
-        travel_booking_params.ajax_url = '/wp-json/travel-booking/v1/apply-promo';
+        if (!travel_booking_params.ajax_url) {
+            travel_booking_params.ajax_url = '/wp-admin/admin-ajax.php';
+        }
     }
 
-        const clientForm = $('#travel-booking-client-form');
-        
-        if (clientForm.length === 0) {
-            return;
-        }
-        
-        // Handle client form submission
+    // TOUJOURS attacher les événements - PAS de return prématuré !
+    
+    // Handle promo code application - POUR TOUS LES CAS
+    $(document).on('click', '#apply-promo-code', function() {
+        console.log('Click sur apply-promo-code détecté!');
+        applyPromoCode();
+    });
+    
+    // Handle promo code final (après infos client)
+    $(document).on('click', '#apply-promo-code-final', function() {
+        console.log('Click sur apply-promo-code-final détecté!');
+        applyPromoCodeFinal();
+    });
+    
+    // Handle create order button
+    $('#create-order').on('click', function() {
+        createOrder();
+    });
+    
+    // Handle client form submission SEULEMENT s'il existe
+    const clientForm = $('#travel-booking-client-form');
+    if (clientForm.length > 0) {
+        console.log('Formulaire client trouvé, ajout événement submit');
         clientForm.on('submit', function(e) {
             e.preventDefault();
             saveClientDetails();
         });
-        
-        // Handle promo code application
-        $('#apply-promo-code').on('click', function() {
-            applyPromoCode();
-        });
-        
-        // Handle create order button
-        $('#create-order').on('click', function() {
-            createOrder();
-        });
+    } else {
+        console.log('Formulaire client non trouvé (infos déjà saisies)');
     }
+}
     
     /**
      * Initialize Google Maps autocomplete
@@ -215,31 +302,84 @@ if (typeof travel_booking_params === 'undefined') {
         });
     }
     
-    /**
-     * Get available vehicles
-     */
-    function getAvailableVehicles(departure, destination, passengers, distance, duration, roundTrip) {
-        const travelDate = $('#travel-date').val();
-        const travelTime = $('#travel-time').val();
+/**
+ * Get available vehicles - VERSION CORRIGÉE
+ */
+function getAvailableVehicles(departure, destination, passengers, distance, duration, roundTrip) {
+    const travelDate = $('#travel-date').val();
+    const travelTime = $('#travel-time').val();
 
+    console.log('Données envoyées:', {
+    action: 'get_available_vehicles',
+    departure: departure,
+    destination: destination,
+    passengers: passengers,
+    distance: distance,
+    duration: duration,
+    round_trip: roundTrip ? 1 : 0,
+    nonce: travel_booking_params.nonce
+});
+
+    $.ajax({
+        url: travel_booking_params.ajax_url,
+        type: 'GET',
+        data: {
+            action: 'get_available_vehicles',
+            departure: departure,
+            destination: destination,
+            passengers: passengers,
+            distance: distance,
+            duration: duration,
+            round_trip: roundTrip ? 1 : 0,
+            nonce: travel_booking_params.nonce
+        },
+        success: function(response) {
+            $('.travel-booking-loading-animation').hide();
+            
+            if (response.success) {
+                displayVehicles(response.data, departure, destination, distance, duration, travelDate, travelTime, passengers, roundTrip);
+            } else {
+                alert(response.data.message || travel_booking_params.i18n.error);
+            }
+        },
+        error: function() {
+            $('.travel-booking-loading-animation').hide();
+            alert(travel_booking_params.i18n.error);
+        }
+    });
+}
+
+/**
+ * Select a vehicle and create booking - VERSION CORRIGÉE
+ */
+function selectVehicle(vehicleData) {
+    if (confirm(travel_booking_params.i18n.confirm_selection)) {
+        // Show loading animation
+        $('.travel-booking-loading-animation').show();
+        
+        // CORRECTION : Utiliser ajax_url pour create_booking
         $.ajax({
-            url: travel_booking_params.ajax_url,
-            type: 'GET',
+            url: travel_booking_params.ajax_url, // ← CHANGEMENT ICI
+            type: 'POST',
             data: {
-                action: 'get_available_vehicles',
-                departure: departure,
-                destination: destination,
-                passengers: passengers,
-                distance: distance,
-                duration: duration,
-                round_trip: roundTrip ? 1 : 0,
+                action: 'create_booking', // ← Action WordPress AJAX
+                vehicle_id: vehicleData.vehicleId,
+                departure: vehicleData.departure,
+                destination: vehicleData.destination,
+                travel_date: vehicleData.travelDate,
+                travel_time: vehicleData.travelTime,
+                passengers: vehicleData.passengers,
+                distance: vehicleData.distance,
+                duration: vehicleData.duration,
+                price: vehicleData.price,
+                round_trip: vehicleData.roundTrip,
                 nonce: travel_booking_params.nonce
             },
             success: function(response) {
                 $('.travel-booking-loading-animation').hide();
                 
                 if (response.success) {
-                    displayVehicles(response.data, departure, destination, distance, duration, travelDate, travelTime, passengers, roundTrip);
+                    window.location.href = response.data.redirect_url;
                 } else {
                     alert(response.data.message || travel_booking_params.i18n.error);
                 }
@@ -250,174 +390,142 @@ if (typeof travel_booking_params === 'undefined') {
             }
         });
     }
-    
-    /**
-     * Display available vehicles
-     */
-    function displayVehicles(vehicles, departure, destination, distance, duration, travelDate, travelTime, passengers, roundTrip) {
-        const vehiclesContainer = $('#travel-booking-vehicles');
-        vehiclesContainer.empty();
-        
-        if (vehicles.length === 0) {
-            vehiclesContainer.html('<p class="travel-booking-no-vehicles">' + travel_booking_params.i18n.no_vehicles + '</p>');
-            return;
-        }
-        
-        // Create vehicles container
-        const vehiclesGrid = $('<div class="travel-booking-vehicles-grid"></div>');
-        
-        // Add vehicles
-        $.each(vehicles, function(index, vehicle) {
-            const vehicleCard = $('<div class="travel-booking-vehicle-card"></div>');
-            
-            vehicleCard.html(`
-                <div class="travel-booking-vehicle-card-image">
-                    <img src="${vehicle.image_url}" alt="${vehicle.name}">
-                </div>
-                <div class="travel-booking-vehicle-card-content">
-                    <h3 class="travel-booking-vehicle-card-title">${vehicle.name}</h3>
-                    <p class="travel-booking-vehicle-card-description">${vehicle.description || ''}</p>
-                    <div class="travel-booking-vehicle-card-details">
-                        <div class="travel-booking-vehicle-card-capacity">
-                            <span class="travel-booking-vehicle-card-label">Capacity:</span>
-                            <span class="travel-booking-vehicle-card-value">${vehicle.capacity} passengers</span>
-                        </div>
-                        <div class="travel-booking-vehicle-card-price">
-                            <span class="travel-booking-vehicle-card-label">Price:</span>
-                            <span class="travel-booking-vehicle-card-value">${vehicle.price.toFixed(2)} ${travel_booking_params.currency_symbol || '$'}</span>
-                        </div>
-                    </div>
-                    <button type="button" class="travel-booking-button travel-booking-select-vehicle"
-                        data-vehicle-id="${vehicle.id}"
-                        data-name="${vehicle.name}"
-                        data-price="${vehicle.price}"
-                        data-capacity="${vehicle.capacity}"
-                        data-distance="${distance}"
-                        data-duration="${duration}"
-                        data-departure="${departure}"
-                        data-destination="${destination}"
-                        data-travel-date="${travelDate}"
-                        data-travel-time="${travelTime}"
-                        data-passengers="${passengers}"
-                        data-round-trip="${roundTrip ? 1 : 0}">
-                        Select
-                    </button>
-                </div>
-            `);
-            
-            vehiclesGrid.append(vehicleCard);
-        });
-        
-        vehiclesContainer.append('<h3>' + travel_booking_params.i18n.select_vehicle + '</h3>');
-        vehiclesContainer.append(vehiclesGrid);
-        
-        // Scroll to vehicles
-        $('html, body').animate({
-            scrollTop: vehiclesContainer.offset().top - 50
-        }, 500);
-    }
-    
-    /**
-     * Select a vehicle and create booking
-     */
-    function selectVehicle(vehicleData) {
-        if (confirm(travel_booking_params.i18n.confirm_selection)) {
-            // Show loading animation
-            $('.travel-booking-loading-animation').show();
-            
-            $.ajax({
-                url: travel_booking_params.ajax_url,
-                type: 'POST',
-                data: {
-                    action: 'create_booking',
-                    vehicle_id: vehicleData.vehicleId,
-                    departure: vehicleData.departure,
-                    destination: vehicleData.destination,
-                    travel_date: vehicleData.travelDate,
-                    travel_time: vehicleData.travelTime,
-                    passengers: vehicleData.passengers,
-                    distance: vehicleData.distance,
-                    duration: vehicleData.duration,
-                    price: vehicleData.price,
-                    round_trip: vehicleData.roundTrip,
-                    nonce: travel_booking_params.nonce
-                },
-                success: function(response) {
-                    $('.travel-booking-loading-animation').hide();
-                    
-                    if (response.success) {
-                        window.location.href = response.data.redirect_url;
-                    } else {
-                        alert(response.data.message || travel_booking_params.i18n.error);
-                    }
-                },
-                error: function() {
-                    $('.travel-booking-loading-animation').hide();
-                    alert(travel_booking_params.i18n.error);
-                }
-            });
-        }
-    }
-    
+}
+
 /**
-     * Save client details
-     */
-    function saveClientDetails() {
-        const firstName = $('#first-name').val();
-        const lastName = $('#last-name').val();
-        const email = $('#email').val();
-        const phone = $('#phone').val();
-        const address = $('#address').val();
-        const flightNumber = $('#flight-number').val();
-        const notes = $('#notes').val();
-        
-        if (!firstName || !lastName || !email || !phone || !address) {
-            alert(travel_booking_params.i18n.fill_required);
-            return;
-        }
-        
-        // Show loading animation
-        $('#proceed-to-payment').text(travel_booking_params.i18n.processing).prop('disabled', true);
-        
-        $.ajax({
-            url: travel_booking_params.ajax_url,
-            type: 'POST',
-            data: {
-                action: 'update_booking_client',
-                token: travel_booking_params.token,
-                first_name: firstName,
-                last_name: lastName,
-                email: email,
-                phone: phone,
-                address: address,
-                flight_number: flightNumber,
-                notes: notes,
-                nonce: travel_booking_params.nonce
-            },
-            success: function(response) {
-                if (response.success) {
-                    // Create order after saving client details
-                    createOrder();
-                } else {
-                    $('#proceed-to-payment').text(travel_booking_params.i18n.proceed_payment).prop('disabled', false);
-                    alert(response.data.message || travel_booking_params.i18n.error);
-                }
-            },
-            error: function() {
-                $('#proceed-to-payment').text(travel_booking_params.i18n.proceed_payment).prop('disabled', false);
-                alert(travel_booking_params.i18n.error);
-            }
-        });
+ * Display available vehicles
+ */
+function displayVehicles(vehicles, departure, destination, distance, duration, travelDate, travelTime, passengers, roundTrip) {
+    const vehiclesContainer = $('#travel-booking-vehicles');
+    vehiclesContainer.empty();
+    
+    if (vehicles.length === 0) {
+        vehiclesContainer.html('<p class="travel-booking-no-vehicles">' + travel_booking_params.i18n.no_vehicles + '</p>');
+        return;
     }
     
-    /**
-     * Apply promo code
-     **/
+    // Create vehicles container
+    const vehiclesGrid = $('<div class="travel-booking-vehicles-grid"></div>');
+    
+    // Add vehicles
+    $.each(vehicles, function(index, vehicle) {
+        const vehicleCard = $('<div class="travel-booking-vehicle-card"></div>');
+        
+        vehicleCard.html(`
+            <div class="travel-booking-vehicle-card-image">
+                <img src="${vehicle.image_url}" alt="${vehicle.name}">
+            </div>
+            <div class="travel-booking-vehicle-card-content">
+                <h3 class="travel-booking-vehicle-card-title">${vehicle.name}</h3>
+                <p class="travel-booking-vehicle-card-description">${vehicle.description || ''}</p>
+                <div class="travel-booking-vehicle-card-details">
+                    <div class="travel-booking-vehicle-card-capacity">
+                        <span class="travel-booking-vehicle-card-label">Capacity:</span>
+                        <span class="travel-booking-vehicle-card-value">${vehicle.capacity} passengers</span>
+                    </div>
+                    <div class="travel-booking-vehicle-card-price">
+                        <span class="travel-booking-vehicle-card-label">Price:</span>
+                        <span class="travel-booking-vehicle-card-value">${vehicle.price.toFixed(2)} ${travel_booking_params.currency_symbol || 'CHF'}</span>
+                    </div>
+                </div>
+                <button type="button" class="travel-booking-button travel-booking-select-vehicle"
+                    data-vehicle-id="${vehicle.id}"
+                    data-name="${vehicle.name}"
+                    data-price="${vehicle.price}"
+                    data-capacity="${vehicle.capacity}"
+                    data-distance="${distance}"
+                    data-duration="${duration}"
+                    data-departure="${departure}"
+                    data-destination="${destination}"
+                    data-travel-date="${travelDate}"
+                    data-travel-time="${travelTime}"
+                    data-passengers="${passengers}"
+                    data-round-trip="${roundTrip ? 1 : 0}">
+                    Select
+                </button>
+            </div>
+        `);
+        
+        vehiclesGrid.append(vehicleCard);
+    });
+    
+    vehiclesContainer.append('<h3>' + travel_booking_params.i18n.select_vehicle + '</h3>');
+    vehiclesContainer.append(vehiclesGrid);
+    
+    // Scroll to vehicles
+    $('html, body').animate({
+        scrollTop: vehiclesContainer.offset().top - 50
+    }, 500);
+}
+
+/**
+ * Save client details - VERSION CORRIGÉE
+ */
+function saveClientDetails() {
+    const firstName = $('#first-name').val();
+    const lastName = $('#last-name').val();
+    const email = $('#email').val();
+    const phone = $('#phone').val();
+    const address = $('#address').val();
+    const flightNumber = $('#flight-number').val();
+    const notes = $('#notes').val();
+    
+    if (!firstName || !lastName || !email || !phone || !address) {
+        alert(travel_booking_params.i18n.fill_required);
+        return;
+    }
+    
+    // Show loading animation
+    $('#proceed-to-payment').text(travel_booking_params.i18n.processing).prop('disabled', true);
+    
+    // CORRECTION : Utiliser ajax_url pour update_booking_client
+    $.ajax({
+        url: travel_booking_params.ajax_url, // ← CHANGEMENT ICI
+        type: 'POST',
+        data: {
+            action: 'update_booking_client', // ← Action WordPress AJAX
+            token: travel_booking_params.token,
+            first_name: firstName,
+            last_name: lastName,
+            email: email,
+            phone: phone,
+            address: address,
+            flight_number: flightNumber,
+            notes: notes,
+            nonce: travel_booking_params.nonce
+        },
+        success: function(response) {
+            if (response.success) {
+                // Create order after saving client details
+                createOrder();
+            } else {
+                $('#proceed-to-payment').text(travel_booking_params.i18n.proceed_payment).prop('disabled', false);
+                alert(response.data.message || travel_booking_params.i18n.error);
+            }
+        },
+        error: function() {
+            $('#proceed-to-payment').text(travel_booking_params.i18n.proceed_payment).prop('disabled', false);
+            alert(travel_booking_params.i18n.error);
+        }
+    });
+}
 /**
  * Apply promo code - VERSION CORRIGÉE
  */
 function applyPromoCode() {
+
+    console.log('=== applyPromoCode appelée ===');
+    console.log('Button clicked!');
+    
     const promoCode = $('#promo-code').val().trim();
+    console.log('Promo code value:', promoCode);
+
+    
+    // // DEBUG - Ajoute ces lignes
+    // console.log('=== DEBUG applyPromoCode ===');
+    // console.log('Promo code:', promoCode);
+    // console.log('Token:', travel_booking_params.token);
+    // console.log('REST URL:', travel_booking_params.rest_url);
     
     if (!promoCode) {
         $('#promo-code-message')
@@ -575,8 +683,8 @@ function createOrder() {
         url: createOrderUrl,
         type: 'POST',
         data: JSON.stringify({
-            token: travel_booking_params.token
-        }),
+        token: travel_booking_params.token
+    }),
         contentType: 'application/json',
         dataType: 'json',
         success: function(response) {
