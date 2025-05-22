@@ -178,3 +178,41 @@
     background-color: #e1c6df;
     color: #69286b;
 }
+
+/* Correction du tableau admin qui dépasse */
+.travel-booking-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+    table-layout: fixed; /* AJOUT IMPORTANT */
+}
+
+.travel-booking-table th,
+.travel-booking-table td {
+    padding: 8px; /* Réduire le padding */
+    border-bottom: 1px solid #f1f1f1;
+    text-align: left;
+    word-wrap: break-word; /* AJOUT IMPORTANT */
+    overflow: hidden; /* AJOUT IMPORTANT */
+}
+
+/* Largeurs spécifiques pour les colonnes */
+.travel-booking-table .column-id { width: 8%; }
+.travel-booking-table .column-customer { width: 20%; }
+.travel-booking-table .column-from { width: 20%; }
+.travel-booking-table .column-to { width: 20%; }
+.travel-booking-table .column-date { width: 15%; }
+.travel-booking-table .column-status { width: 10%; }
+.travel-booking-table .column-actions { width: 7%; }
+
+/* Style responsive */
+@media (max-width: 1200px) {
+    .travel-booking-table {
+        font-size: 13px;
+    }
+    
+    .travel-booking-table th,
+    .travel-booking-table td {
+        padding: 6px;
+    }
+}

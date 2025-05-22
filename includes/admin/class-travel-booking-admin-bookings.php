@@ -13,6 +13,15 @@ class Travel_Booking_Admin_Bookings {
      * Handle bookings page actions
      */
     public static function page_actions() {
+        // Handle bulk actions FIRST
+        if (isset($_POST['action']) || isset($_POST['action2'])) {
+            $action = $_POST['action'] !== '-1' ? $_POST['action'] : $_POST['action2'];
+            
+            if ($action !== '-1' && !empty($_POST['booking_ids']) && wp_verify_nonce($_POST['travel_booking_bulk_nonce'], 'travel_booking_bulk_action')) {
+                self::handle_bulk_action($action, $_POST['booking_ids']);
+            }
+        }
+        
         // Handle status update action
         if (isset($_GET['action']) && $_GET['action'] === 'update_status' && isset($_GET['id']) && isset($_GET['status']) && isset($_GET['_wpnonce'])) {
             // Verify nonce
@@ -32,6 +41,56 @@ class Travel_Booking_Admin_Bookings {
             
             self::handle_delete_booking(intval($_GET['id']));
         }
+    }
+    
+    /**
+     * Handle bulk actions
+     */
+    private static function handle_bulk_action($action, $booking_ids) {
+        $booking_ids = array_map('intval', $booking_ids);
+        $success_count = 0;
+        
+        foreach ($booking_ids as $booking_id) {
+            switch ($action) {
+                case 'delete':
+                    if (Travel_Booking_Booking::delete($booking_id)) {
+                        $success_count++;
+                    }
+                    break;
+                    
+                case 'confirm':
+                    if (Travel_Booking_Booking::update_status($booking_id, 'confirmed')) {
+                        $success_count++;
+                    }
+                    break;
+                    
+                case 'cancel':
+                    if (Travel_Booking_Booking::update_status($booking_id, 'cancelled')) {
+                        $success_count++;
+                    }
+                    break;
+            }
+        }
+        
+        // Redirect with success message
+        $message = '';
+        switch ($action) {
+            case 'delete':
+                $message = sprintf(_n('%d booking deleted.', '%d bookings deleted.', $success_count, 'travel-booking'), $success_count);
+                break;
+            case 'confirm':
+                $message = sprintf(_n('%d booking confirmed.', '%d bookings confirmed.', $success_count, 'travel-booking'), $success_count);
+                break;
+            case 'cancel':
+                $message = sprintf(_n('%d booking cancelled.', '%d bookings cancelled.', $success_count, 'travel-booking'), $success_count);
+                break;
+        }
+        
+        wp_redirect(add_query_arg(
+            array('page' => 'travel-booking-bookings', 'bulk_message' => urlencode($message)),
+            admin_url('admin.php')
+        ));
+        exit;
     }
     
     /**
@@ -166,6 +225,11 @@ class Travel_Booking_Admin_Bookings {
                     echo '<div class="notice notice-success is-dismissible"><p>' . __('Booking deleted successfully.', 'travel-booking') . '</p></div>';
                     break;
             }
+        }
+        
+        // Bulk action messages
+        if (isset($_GET['bulk_message'])) {
+            echo '<div class="notice notice-success is-dismissible"><p>' . esc_html(urldecode($_GET['bulk_message'])) . '</p></div>';
         }
         
         // Display bookings list template
