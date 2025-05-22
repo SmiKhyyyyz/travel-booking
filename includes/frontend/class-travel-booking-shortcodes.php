@@ -1,6 +1,6 @@
 <?php
 /**
- * Frontend shortcodes
+ * Frontend shortcodes - Version Corrigée
  */
 
 // If this file is called directly, abort.
@@ -37,20 +37,23 @@ class Travel_Booking_Shortcodes {
             return '<div class="travel-booking-notice travel-booking-error">' . __('Google Maps API key is not configured. Please configure it in the plugin settings.', 'travel-booking') . '</div>';
         }
         
-        // Enqueue Google Maps script
+        // Enqueue Google Maps script with correct callback
         wp_enqueue_script(
             'google-maps',
-            'https://maps.googleapis.com/maps/api/js?key=' . $api_key . '&libraries=places&callback=initTravelBooking',
+            'https://maps.googleapis.com/maps/api/js?key=' . $api_key . '&libraries=places&callback=initTravelBookingCallback',
             array('travel-booking'),
             null,
             true
         );
         
-        // Localize script
+        // Localize script with all necessary parameters
         wp_localize_script('travel-booking', 'travel_booking_params', array(
             'ajax_url' => admin_url('admin-ajax.php'),
+            'rest_url' => rest_url(),
             'nonce' => wp_create_nonce('travel_booking_nonce'),
+            'rest_nonce' => wp_create_nonce('wp_rest'),
             'default_location' => get_option('travel_booking_default_location', 'Geneva, Switzerland'),
+            'currency_symbol' => function_exists('get_woocommerce_currency_symbol') ? get_woocommerce_currency_symbol() : 'CHF',
             'i18n' => array(
                 'select_vehicle' => __('Select Vehicle', 'travel-booking'),
                 'loading' => __('Loading...', 'travel-booking'),
@@ -58,7 +61,9 @@ class Travel_Booking_Shortcodes {
                 'no_vehicles' => __('No vehicles available for the selected criteria.', 'travel-booking'),
                 'calculate_first' => __('Please calculate the route first.', 'travel-booking'),
                 'fill_required' => __('Please fill in all required fields.', 'travel-booking'),
-                'confirm_selection' => __('Are you sure you want to select this vehicle?', 'travel-booking')
+                'confirm_selection' => __('Are you sure you want to select this vehicle?', 'travel-booking'),
+                'proceed_payment' => __('Proceed to Payment', 'travel-booking'),
+                'processing' => __('Processing...', 'travel-booking')
             )
         ));
         
@@ -106,11 +111,14 @@ class Travel_Booking_Shortcodes {
             return '<div class="travel-booking-notice travel-booking-error">' . __('Vehicle not found. Please start a new booking.', 'travel-booking') . '</div>';
         }
         
-        // Localize script
+        // Localize script with enhanced parameters
         wp_localize_script('travel-booking', 'travel_booking_params', array(
             'ajax_url' => admin_url('admin-ajax.php'),
+            'rest_url' => rest_url(),
             'nonce' => wp_create_nonce('travel_booking_nonce'),
+            'rest_nonce' => wp_create_nonce('wp_rest'),
             'token' => $token,
+            'currency_symbol' => function_exists('get_woocommerce_currency_symbol') ? get_woocommerce_currency_symbol() : 'CHF',
             'i18n' => array(
                 'confirm' => __('Are you sure?', 'travel-booking'),
                 'processing' => __('Processing...', 'travel-booking'),
