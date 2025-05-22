@@ -1,0 +1,180 @@
+/**
+ * Travel Booking Admin Styles
+ */
+
+/* Dashboard widgets */
+.travel-booking-stats {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -10px;
+}
+
+.travel-booking-stat-box {
+    flex: 1 1 200px;
+    margin: 10px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.travel-booking-stat-box h3 {
+    margin-top: 0;
+    color: #23282d;
+}
+
+.travel-booking-stat-box .stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #0073aa;
+    margin: 10px 0;
+}
+
+.travel-booking-stat-box.pending .stat-value {
+    color: #f56e28;
+}
+
+.travel-booking-stat-box.confirmed .stat-value {
+    color: #46b450;
+}
+
+.travel-booking-stat-box.completed .stat-value {
+    color: #0073aa;
+}
+
+.travel-booking-stat-box.cancelled .stat-value {
+    color: #dc3232;
+}
+
+/* Tables */
+.travel-booking-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.travel-booking-table th,
+.travel-booking-table td {
+    padding: 10px;
+    border-bottom: 1px solid #f1f1f1;
+    text-align: left;
+}
+
+.travel-booking-table th {
+    background-color: #f9f9f9;
+    font-weight: 600;
+}
+
+.travel-booking-table tr:hover {
+    background-color: #f9f9f9;
+}
+
+/* Forms */
+.travel-booking-form {
+    max-width: 800px;
+    margin-top: 20px;
+}
+
+.travel-booking-form .form-row {
+    margin-bottom: 15px;
+}
+
+.travel-booking-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.travel-booking-form input[type="text"],
+.travel-booking-form input[type="number"],
+.travel-booking-form input[type="email"],
+.travel-booking-form input[type="url"],
+.travel-booking-form textarea,
+.travel-booking-form select {
+    width: 100%;
+    max-width: 400px;
+    padding: 8px;
+}
+
+.travel-booking-form textarea {
+    height: 150px;
+}
+
+.travel-booking-form .description {
+    margin-top: 5px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Tabs */
+.travel-booking-tabs {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ccc;
+}
+
+.travel-booking-tabs a {
+    display: inline-block;
+    padding: 10px 15px;
+    margin-right: 5px;
+    background-color: #f1f1f1;
+    text-decoration: none;
+    color: #444;
+    border: 1px solid #ccc;
+    border-bottom: none;
+}
+
+.travel-booking-tabs a.active {
+    background-color: white;
+    border-bottom: 1px solid white;
+    margin-bottom: -1px;
+}
+
+/* Vehicle image */
+.vehicle-image-preview {
+    max-width: 200px;
+    height: auto;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+}
+
+/* Status indicators */
+.status-indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background-color: #f8dda7;
+    color: #94660c;
+}
+
+.status-confirmed {
+    background-color: #c6e1c6;
+    color: #5b841b;
+}
+
+.status-completed {
+    background-color: #c8d7e1;
+    color: #2e4453;
+}
+
+.status-cancelled {
+    background-color: #eba3a3;
+    color: #761919;
+}
+
+.status-failed {
+    background-color: #eba3a3;
+    color: #761919;
+}
+
+.status-refunded {
+    background-color: #e1c6df;
+    color: #69286b;
+}
