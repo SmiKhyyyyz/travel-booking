@@ -773,6 +773,381 @@ function initTravelBookingParams() {
             }
         });
     }
+
+    /**
+ * Ajouts JavaScript pour le nouveau design - À ajouter dans travel-booking.js
+ */
+
+// Style de carte sombre (comme l'ancien plugin)
+const darkMapStyle = [
+    {
+        "elementType": "geometry",
+        "stylers": [{"color": "#212121"}]
+    },
+    {
+        "elementType": "labels.icon",
+        "stylers": [{"visibility": "off"}]
+    },
+    {
+        "elementType": "labels.text.fill",
+        "stylers": [{"color": "#757575"}]
+    },
+    {
+        "elementType": "labels.text.stroke",
+        "stylers": [{"color": "#212121"}]
+    },
+    {
+        "featureType": "administrative",
+        "elementType": "geometry",
+        "stylers": [{"color": "#757575"}]
+    },
+    {
+        "featureType": "administrative.country",
+        "elementType": "labels.text.fill",
+        "stylers": [{"color": "#9e9e9e"}]
+    },
+    {
+        "featureType": "administrative.locality",
+        "elementType": "labels.text.fill",
+        "stylers": [{"color": "#bdbdbd"}]
+    },
+    {
+        "featureType": "poi",
+        "elementType": "labels.text.fill",
+        "stylers": [{"color": "#757575"}]
+    },
+    {
+        "featureType": "poi.park",
+        "elementType": "geometry",
+        "stylers": [{"color": "#181818"}]
+    },
+    {
+        "featureType": "road",
+        "elementType": "geometry.fill",
+        "stylers": [{"color": "#2c2c2c"}]
+    },
+    {
+        "featureType": "road",
+        "elementType": "labels.text.fill",
+        "stylers": [{"color": "#8a8a8a"}]
+    },
+    {
+        "featureType": "road.arterial",
+        "elementType": "geometry",
+        "stylers": [{"color": "#373737"}]
+    },
+    {
+        "featureType": "road.highway",
+        "elementType": "geometry",
+        "stylers": [{"color": "#3c3c3c"}]
+    },
+    {
+        "featureType": "water",
+        "elementType": "geometry",
+        "stylers": [{"color": "#000000"}]
+    },
+    {
+        "featureType": "water",
+        "elementType": "labels.text.fill",
+        "stylers": [{"color": "#3d3d3d"}]
+    }
+];
+
+/**
+ * Initialiser la carte avec le nouveau style
+ */
+function initMapWithStyle() {
+    if (!window.travelBookingMap) {
+        const mapElement = document.getElementById('travel-booking-map');
+        
+        if (mapElement) {
+            const defaultLocation = { lat: 46.2044, lng: 6.1432 }; // Geneva
+            
+            window.travelBookingMap = new google.maps.Map(mapElement, {
+                center: defaultLocation,
+                zoom: 10,
+                styles: darkMapStyle, // Appliquer le style sombre
+                disableDefaultUI: false,
+                zoomControl: true,
+                mapTypeControl: false,
+                streetViewControl: false,
+                fullscreenControl: true
+            });
+            
+            // Initialiser les services de directions
+            window.directionsService = new google.maps.DirectionsService();
+            window.directionsRenderer = new google.maps.DirectionsRenderer({
+                suppressMarkers: false,
+                polylineOptions: {
+                    strokeColor: '#d3b27f', // Couleur dorée pour la route
+                    strokeWeight: 4,
+                    strokeOpacity: 0.8
+                },
+                markerOptions: {
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 8,
+                        fillColor: '#d3b27f',
+                        fillOpacity: 1,
+                        strokeColor: '#ffffff',
+                        strokeWeight: 2
+                    }
+                }
+            });
+            window.directionsRenderer.setMap(window.travelBookingMap);
+        }
+    }
+}
+
+/**
+ * Afficher le trajet sur la carte avec style
+ */
+function displayRouteOnMapStyled(departure, destination) {
+    if (!window.directionsService || !window.directionsRenderer) {
+        initMapWithStyle();
+    }
+    
+    console.log('Calcul du trajet:', departure, 'vers', destination);
+    
+    window.directionsService.route({
+        origin: departure,
+        destination: destination,
+        travelMode: google.maps.TravelMode.DRIVING,
+        provideRouteAlternatives: true,
+        optimizeWaypoints: true,
+        avoidHighways: false,
+        avoidTolls: false
+    }, function(response, status) {
+        if (status === google.maps.DirectionsStatus.OK) {
+            // Trouver la route la plus courte en distance
+            let shortestRoute = response.routes[0];
+            let shortestDistance = shortestRoute.legs[0].distance.value;
+            
+            response.routes.forEach(route => {
+                const distance = route.legs[0].distance.value;
+                if (distance < shortestDistance) {
+                    shortestDistance = distance;
+                    shortestRoute = route;
+                }
+            });
+            
+            // Créer une réponse avec seulement la route la plus courte
+            const filteredResponse = {
+                ...response,
+                routes: [shortestRoute]
+            };
+            
+            window.directionsRenderer.setDirections(filteredResponse);
+            
+            // Afficher les informations de la route
+            const leg = shortestRoute.legs[0];
+            $('#travel-booking-distance').text((leg.distance.value / 1000).toFixed(2) + ' km');
+            $('#travel-booking-duration').text((leg.duration.value / 3600).toFixed(2) + ' hours');
+            $('#travel-booking-results').show();
+            
+            console.log('Trajet affiché sur la carte');
+        } else {
+            console.error('Erreur lors du calcul du trajet:', status);
+        }
+    });
+}
+
+/**
+ * Afficher les véhicules avec le nouveau design
+ */
+function displayVehiclesStyled(vehicles, departure, destination, distance, duration, travelDate, travelTime, passengers, roundTrip) {
+    const vehiclesContainer = $('#travel-booking-vehicles');
+    vehiclesContainer.empty();
+    
+    if (vehicles.length === 0) {
+        vehiclesContainer.html('<p class="travel-booking-no-vehicles">' + travel_booking_params.i18n.no_vehicles + '</p>');
+        return;
+    }
+    
+    // Créer le titre
+    vehiclesContainer.append('<h3 style="text-align: center; color: #354747; margin-bottom: 30px;">' + travel_booking_params.i18n.select_vehicle + '</h3>');
+    
+    // Créer la grille de véhicules
+    const vehiclesGrid = $('<div class="travel-booking-vehicles-grid"></div>');
+    
+    // Ajouter chaque véhicule
+    $.each(vehicles, function(index, vehicle) {
+        const vehicleCard = $('<div class="travel-booking-vehicle-card"></div>');
+        
+        vehicleCard.html(`
+            <div class="travel-booking-vehicle-card-image">
+                <img src="${vehicle.image_url}" alt="${vehicle.name}">
+            </div>
+            <div class="travel-booking-vehicle-card-content">
+                <h3 class="travel-booking-vehicle-card-title">${vehicle.name}</h3>
+                <p class="travel-booking-vehicle-card-description">${vehicle.description || ''}</p>
+                <div class="travel-booking-vehicle-card-details">
+                    <div class="travel-booking-vehicle-card-capacity">
+                        <span class="travel-booking-vehicle-card-label">Capacity:</span>
+                        <span class="travel-booking-vehicle-card-value">${vehicle.capacity} passengers</span>
+                    </div>
+                    <div class="travel-booking-vehicle-card-price">
+                        <span class="travel-booking-vehicle-card-label">Price:</span>
+                        <span class="travel-booking-vehicle-card-value">${vehicle.price.toFixed(2)} ${travel_booking_params.currency_symbol || 'CHF'}</span>
+                    </div>
+                </div>
+                <button type="button" class="travel-booking-select-vehicle"
+                    data-vehicle-id="${vehicle.id}"
+                    data-name="${vehicle.name}"
+                    data-price="${vehicle.price}"
+                    data-capacity="${vehicle.capacity}"
+                    data-distance="${distance}"
+                    data-duration="${duration}"
+                    data-departure="${departure}"
+                    data-destination="${destination}"
+                    data-travel-date="${travelDate}"
+                    data-travel-time="${travelTime}"
+                    data-passengers="${passengers}"
+                    data-round-trip="${roundTrip ? 1 : 0}">
+                    Choose this vehicle
+                </button>
+            </div>
+        `);
+        
+        vehiclesGrid.append(vehicleCard);
+    });
+    
+    vehiclesContainer.append(vehiclesGrid);
+    
+    // Animation d'apparition des cartes
+    setTimeout(() => {
+        $('.travel-booking-vehicle-card').each(function(index) {
+            $(this).css({
+                'opacity': '0',
+                'transform': 'translateY(20px)'
+            }).delay(index * 100).animate({
+                'opacity': '1'
+            }, 500).css('transform', 'translateY(0px)');
+        });
+    }, 100);
+    
+    // Scroll vers les véhicules
+    $('html, body').animate({
+        scrollTop: vehiclesContainer.offset().top - 100
+    }, 800);
+}
+
+/**
+ * Mettre à jour la fonction calculateRoute principale
+ */
+function calculateRouteStyled() {
+    const departure = $('#departure').val();
+    const destination = $('#destination').val();
+    const travelDate = $('#travel-date').val();
+    const travelTime = $('#travel-time').val();
+    const passengers = $('#passengers').val();
+    const roundTrip = $('#round-trip').is(':checked');
+    
+    if (!departure || !destination || !travelDate || !travelTime || !passengers) {
+        alert(travel_booking_params.i18n.fill_required);
+        return;
+    }
+    
+    // Afficher l'animation de chargement
+    $('#car-animation-container').show();
+    $('.travel-booking-loading-animation').show();
+    $('#travel-booking-vehicles').empty();
+    $('#travel-booking-results').hide();
+    
+    // Initialiser la carte
+    initMapWithStyle();
+    
+    // Calculer le trajet avec Google Maps
+    const directionsService = new google.maps.DirectionsService();
+    
+    const request = {
+        origin: departure,
+        destination: destination,
+        travelMode: google.maps.TravelMode.DRIVING,
+        provideRouteAlternatives: true,
+        optimizeWaypoints: true
+    };
+    
+    directionsService.route(request, function(result, status) {
+        if (status === google.maps.DirectionsStatus.OK) {
+            // Afficher le trajet sur la carte
+            displayRouteOnMapStyled(departure, destination);
+            
+            // Trouver la route la plus courte
+            let shortestRoute = result.routes[0];
+            let shortestDistance = shortestRoute.legs[0].distance.value;
+            
+            result.routes.forEach(route => {
+                const distance = route.legs[0].distance.value;
+                if (distance < shortestDistance) {
+                    shortestDistance = distance;
+                    shortestRoute = route;
+                }
+            });
+            
+            const leg = shortestRoute.legs[0];
+            const distance = leg.distance.value / 1000; // en km
+            const duration = leg.duration.value / 3600; // en heures
+            
+            // Obtenir les véhicules disponibles
+            getAvailableVehicles(departure, destination, passengers, distance, duration, roundTrip);
+            
+        } else {
+            $('.travel-booking-loading-animation').hide();
+            $('#car-animation-container').hide();
+            alert('Could not calculate the route. Please try again.');
+        }
+    });
+}
+
+/**
+ * Mise à jour de la fonction d'affichage des véhicules
+ */
+function updateDisplayVehicles() {
+    // Remplacer la fonction displayVehicles existante
+    window.originalDisplayVehicles = window.displayVehicles;
+    window.displayVehicles = displayVehiclesStyled;
+}
+
+/**
+ * Initialisation automatique au chargement
+ */
+$(document).ready(function() {
+    // Remplacer les fonctions existantes par les versions stylées
+    updateDisplayVehicles();
+    
+    // Initialiser la carte dès le chargement
+    setTimeout(initMapWithStyle, 1000);
+    
+    // Gestion des clics sur les sélecteurs de date/heure pour mobile
+    $('#travel-date, #travel-time').on('click', function() {
+        if (this.showPicker) {
+            this.showPicker();
+        }
+    });
+    
+    // Animation au scroll pour les éléments
+    $(window).scroll(function() {
+        $('.travel-booking-vehicle-card').each(function() {
+            const elementTop = $(this).offset().top;
+            const elementBottom = elementTop + $(this).outerHeight();
+            const viewportTop = $(window).scrollTop();
+            const viewportBottom = viewportTop + $(window).height();
+            
+            if (elementBottom > viewportTop && elementTop < viewportBottom) {
+                $(this).addClass('visible');
+            }
+        });
+    });
+});
+
+/**
+ * Surcharger la fonction calculateRoute si elle existe
+ */
+if (typeof calculateRoute !== 'undefined') {
+    window.originalCalculateRoute = calculateRoute;
+}
+window.calculateRoute = calculateRouteStyled;
     
     // Make initTravelBooking function available globally
     window.initTravelBooking = initTravelBooking;
