@@ -1,6 +1,6 @@
 <?php
 /**
- * The main plugin class
+ * The main plugin class - MISE À JOUR AVEC ESPACE CLIENT
  */
 
 // If this file is called directly, abort.
@@ -38,6 +38,9 @@ class Travel_Booking {
         $this->define_public_hooks();
         $this->define_shortcodes();
         $this->loader->run();
+        
+        // Flush rewrite rules if needed (for customer area endpoints)
+        add_action('init', array($this, 'maybe_flush_rewrite_rules'));
     }
 
     /**
@@ -47,6 +50,16 @@ class Travel_Booking {
         $mimes['webp'] = 'image/webp';
         $mimes['avif'] = 'image/avif';
         return $mimes;
+    }
+    
+    /**
+     * Maybe flush rewrite rules for customer area endpoints
+     */
+    public function maybe_flush_rewrite_rules() {
+        if (get_option('travel_booking_flush_rewrite_rules', false)) {
+            flush_rewrite_rules();
+            delete_option('travel_booking_flush_rewrite_rules');
+        }
     }
 
     /**
@@ -63,6 +76,9 @@ class Travel_Booking {
         require_once TRAVEL_BOOKING_PLUGIN_DIR . 'includes/admin/class-travel-booking-admin.php';
         require_once TRAVEL_BOOKING_PLUGIN_DIR . 'includes/frontend/class-travel-booking-frontend.php';
         require_once TRAVEL_BOOKING_PLUGIN_DIR . 'includes/frontend/class-travel-booking-shortcodes.php';
+        
+        // Customer area
+        require_once TRAVEL_BOOKING_PLUGIN_DIR . 'includes/frontend/class-travel-booking-customer-area.php';
         
         // API integration
         require_once TRAVEL_BOOKING_PLUGIN_DIR . 'includes/class-travel-booking-api.php';
@@ -107,6 +123,9 @@ class Travel_Booking {
         // Initialize API routes
         $api = new Travel_Booking_API();
         $this->loader->add_action('rest_api_init', $api, 'register_routes');
+        
+        // Initialize Customer Area (this is done automatically in the class)
+        // Travel_Booking_Customer_Area::init() is called in the class itself
     }
 
     /**
