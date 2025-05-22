@@ -150,7 +150,7 @@ class Travel_Booking_Booking {
                 'duration' => floatval($data['duration']),
                 'price' => floatval($data['price']),
                 'travel_date' => $travel_date,
-                'round_trip' => isset($data['round_trip']) ? 1 : 0,
+                'round_trip' => !empty($data['round_trip']) && ($data['round_trip'] === true || $data['round_trip'] === 1 || $data['round_trip'] === '1') ? 1 : 0,
                 'number_of_passengers' => intval($data['passengers']),
                 'status' => 'pending'
             ),

@@ -305,6 +305,12 @@ function initBookingSummary() {
  * Get available vehicles - VERSION CORRIGÉE
  */
 function getAvailableVehicles(departure, destination, passengers, distance, duration, roundTrip) {
+
+    console.log('=== DEBUG Round Trip ===');
+    console.log('roundTrip value:', roundTrip);
+    console.log('roundTrip type:', typeof roundTrip);
+    console.log('Checkbox checked:', $('#round-trip').is(':checked'));
+
     const travelDate = $('#travel-date').val();
     const travelTime = $('#travel-time').val();
 
@@ -352,6 +358,9 @@ function getAvailableVehicles(departure, destination, passengers, distance, dura
  * Select a vehicle and create booking - VERSION CORRIGÉE
  */
 function selectVehicle(vehicleData) {
+    console.log('=== DEBUG selectVehicle ===');
+    console.log('Round trip checkbox checked:', $('#round-trip').is(':checked'));
+    console.log('VehicleData roundTrip:', vehicleData.roundTrip);
     if (confirm(travel_booking_params.i18n.confirm_selection)) {
         // Show loading animation
         $('.travel-booking-loading-animation').show();
@@ -439,7 +448,7 @@ function displayVehicles(vehicles, departure, destination, distance, duration, t
                     data-travel-date="${travelDate}"
                     data-travel-time="${travelTime}"
                     data-passengers="${passengers}"
-                    data-round-trip="${roundTrip ? 1 : 0}">
+                    data-round-trip="${roundTrip === true || roundTrip === 'true' || roundTrip === 1 || roundTrip === '1' ? 1 : 0}">
                     Select
                 </button>
             </div>
