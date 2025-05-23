@@ -100,13 +100,44 @@ class Travel_Booking_Activator {
         // Flush rewrite rules
         flush_rewrite_rules();
     }
+
+    /**
+     * Create default pages
+     */
+    private static function create_default_pages() {
+        // Create booking form page
+        $booking_page = array(
+            'post_title'    => __('Book a Trip', 'travel-booking'),
+            'post_content'  => '[travel_booking_form]',
+            'post_status'   => 'publish',
+            'post_type'     => 'page',
+            'post_name'     => 'book-trip'
+        );
+        
+        $booking_page_id = wp_insert_post($booking_page);
+        if ($booking_page_id) {
+            update_option('travel_booking_booking_page_id', $booking_page_id);
+        }
+        
+        // Create booking summary page
+        $summary_page = array(
+            'post_title'    => __('Booking Summary', 'travel-booking'),
+            'post_content'  => '[travel_booking_summary]',
+            'post_status'   => 'publish',
+            'post_type'     => 'page',
+            'post_name'     => 'booking-summary'
+        );
+        
+        $summary_page_id = wp_insert_post($summary_page);
+        if ($summary_page_id) {
+            update_option('travel_booking_summary_page_id', $summary_page_id);
+        }
+    }
+
     
     /**
-     * Insert sample vehicle data
-     */
-    /**
- * Insert sample vehicle data
- */
+    * Insert sample vehicle data
+    */
     private static function insert_sample_data() {
         global $wpdb;
         $vehicles_table = $wpdb->prefix . 'travel_booking_vehicles';

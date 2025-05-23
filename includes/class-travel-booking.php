@@ -28,19 +28,19 @@ class Travel_Booking {
      * Initialize the plugin
      */
     public function init() {
-        $this->version = TRAVEL_BOOKING_VERSION;
-        
-        // Add webp and avif MIME type support
-        add_filter('upload_mimes', array($this, 'add_webp_avif_mime_types'));
-        
-        $this->load_dependencies();
-        $this->define_admin_hooks();
-        $this->define_public_hooks();
-        $this->define_shortcodes();
-        $this->loader->run();
-        
-        // Flush rewrite rules if needed (for customer area endpoints)
-        add_action('init', array($this, 'maybe_flush_rewrite_rules'));
+    $this->version = TRAVEL_BOOKING_VERSION;
+    
+    // Add webp and avif MIME type support
+    add_filter('upload_mimes', array($this, 'add_webp_avif_mime_types'));
+    
+    // Flush rewrite rules if needed
+    add_action('init', array($this, 'flush_rewrite_rules_maybe'), 20);
+    
+    $this->load_dependencies();
+    $this->define_admin_hooks();
+    $this->define_public_hooks();
+    $this->define_shortcodes();
+    $this->loader->run();
     }
 
     /**
@@ -126,6 +126,16 @@ class Travel_Booking {
         
         // Initialize Customer Area (this is done automatically in the class)
         // Travel_Booking_Customer_Area::init() is called in the class itself
+    }
+
+    /**
+     * Flush rewrite rules on init if needed
+     */
+    public function flush_rewrite_rules_maybe() {
+        if (get_option('travel_booking_needs_flush_rewrite_rules')) {
+            flush_rewrite_rules();
+            delete_option('travel_booking_needs_flush_rewrite_rules');
+        }
     }
 
     /**
