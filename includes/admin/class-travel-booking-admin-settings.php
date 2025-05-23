@@ -12,7 +12,12 @@ class Travel_Booking_Admin_Settings {
     /**
      * Handle settings page actions
      */
-    public static function page_actions() {
+public static function page_actions() {
+    // ✅ CORRECTION : Vérifier qu'on est dans l'admin et après admin_init
+    if (!is_admin() || !did_action('admin_init')) {
+        return;
+    }
+    
     // Register settings - GÉNÉRAL
     register_setting('travel_booking_general', 'travel_booking_google_maps_api_key');
     register_setting('travel_booking_general', 'travel_booking_default_location');
@@ -69,12 +74,12 @@ class Travel_Booking_Admin_Settings {
         'travel_booking_pages_section'
     );
 
-    // ✅ CORRECTION : Register settings - EMAILS (AVANT les sections et champs)
+    // Register settings - EMAILS
     register_setting('travel_booking_emails', 'travel_booking_email_logo');
     register_setting('travel_booking_emails', 'travel_booking_email_from_name');
     register_setting('travel_booking_emails', 'travel_booking_email_from_email');
     register_setting('travel_booking_emails', 'travel_booking_email_footer_text');
-    register_setting('travel_booking_emails', 'travel_booking_additional_admin_email'); // ← NOUVEAU
+    register_setting('travel_booking_emails', 'travel_booking_additional_admin_email');
     
     add_settings_section(
         'travel_booking_emails_section',
@@ -116,7 +121,6 @@ class Travel_Booking_Admin_Settings {
         'travel_booking_emails_section'
     );
 
-    // ✅ NOUVEAU CHAMP : Email admin supplémentaire
     add_settings_field(
         'travel_booking_additional_admin_email',
         __('Additional Admin Email', 'travel-booking'),
@@ -143,7 +147,7 @@ class Travel_Booking_Admin_Settings {
         'travel_booking_woocommerce_section'
     );
 
-    // ✅ Hook pour vérifier la sécurité de l'API lors de la sauvegarde
+    // Hook pour vérifier la sécurité de l'API lors de la sauvegarde
     add_action('update_option_travel_booking_google_maps_api_key', array(__CLASS__, 'check_api_key_security'));
 }
     

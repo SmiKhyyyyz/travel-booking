@@ -115,22 +115,33 @@ class Travel_Booking {
      * Register public hooks
      */
     private function define_public_hooks() {
-        $frontend = new Travel_Booking_Frontend($this->version);
-        
-        $this->loader->add_action('wp_enqueue_scripts', $frontend, 'enqueue_styles');
-        $this->loader->add_action('wp_enqueue_scripts', $frontend, 'enqueue_scripts');
-        
-        // Initialize WooCommerce integration
-        $woocommerce = new Travel_Booking_WooCommerce();
-        $this->loader->add_action('init', $woocommerce, 'init');
-        
-        // Initialize API routes
-        $api = new Travel_Booking_API();
-        $this->loader->add_action('rest_api_init', $api, 'register_routes');
-        
-        // Initialize Customer Area (this is done automatically in the class)
-        // Travel_Booking_Customer_Area::init() is called in the class itself
-    }
+    $frontend = new Travel_Booking_Frontend($this->version);
+    
+    $this->loader->add_action('wp_enqueue_scripts', $frontend, 'enqueue_styles');
+    $this->loader->add_action('wp_enqueue_scripts', $frontend, 'enqueue_scripts');
+    
+    // Initialize WooCommerce integration
+    $woocommerce = new Travel_Booking_WooCommerce();
+    $this->loader->add_action('init', $woocommerce, 'init');
+    
+    // Initialize API routes
+    $api = new Travel_Booking_API();
+    $this->loader->add_action('rest_api_init', $api, 'register_routes');
+    
+    // ✅ CORRECTION : Utilisez admin_init au lieu de wp_loaded
+    $this->loader->add_action('admin_init', 'Travel_Booking_Admin_Settings', 'page_actions');
+    
+    // Support thème automatique (sans les réglages admin)
+    $this->loader->add_action('after_setup_theme', $this, 'add_theme_support');
+    $this->loader->add_action('after_switch_theme', $this, 'after_theme_switch');
+    
+    // Endpoints WooCommerce
+    $this->loader->add_action('init', $this, 'add_woocommerce_endpoints', 0);
+    
+    // Body classes et assets conditionnels
+    $this->loader->add_filter('body_class', $this, 'add_booking_body_classes');
+    $this->loader->add_action('wp_enqueue_scripts', $this, 'conditional_enqueue', 15);
+}
 
     /**
      * Flush rewrite rules on init if needed
@@ -183,4 +194,52 @@ class Travel_Booking {
             header('Referrer-Policy: strict-origin-when-cross-origin');
         }
     }
+
+    public function add_theme_support() {
+    add_theme_support('woocommerce');
+    add_theme_support('travel-booking');
+    add_filter('widget_text', 'do_shortcode');
+}
+
+public function after_theme_switch() {
+    flush_rewrite_rules();
+}
+
+public function add_woocommerce_endpoints() {
+    add_rewrite_endpoint('travel-bookings', EP_ROOT | EP_PAGES);
+    add_rewrite_endpoint('travel-profile', EP_ROOT | EP_PAGES);
+    add_rewrite_endpoint('travel-favorites', EP_ROOT | EP_PAGES);
+}
+
+public function add_booking_body_classes($classes) {
+    if (is_page()) {
+        global $post;
+        if (is_a($post, 'WP_Post')) {
+            if (has_shortcode($post->post_content, 'travel_booking_form')) {
+                $classes[] = 'travel-booking-form-page';
+            }
+            if (has_shortcode($post->post_content, 'travel_booking_summary')) {
+                $classes[] = 'travel-booking-summary-page';
+            }
+        }
+    }
+    return $classes;
+}
+
+public function conditional_enqueue() {
+    global $post;
+    
+    if (is_a($post, 'WP_Post') && (
+        has_shortcode($post->post_content, 'travel_booking_form') || 
+        has_shortcode($post->post_content, 'travel_booking_summary')
+    )) {
+        wp_enqueue_style('travel-booking');
+        wp_enqueue_script('travel-booking');
+    }
+    
+    if (is_account_page()) {
+        wp_enqueue_style('travel-booking-customer');
+        wp_enqueue_script('travel-booking-customer');
+    }
+}
 }
