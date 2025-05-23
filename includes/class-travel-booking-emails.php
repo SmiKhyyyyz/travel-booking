@@ -66,30 +66,46 @@ class Travel_Booking_Emails {
      * Envoyer une notification à l'administrateur pour une nouvelle réservation
      */
     public static function send_admin_notification_email($order_id) {
-        $order = wc_get_order($order_id);
-        if (!$order) return;
-        
-        $booking_token = $order->get_meta('_travel_booking_token');
-        if (!$booking_token) return;
-        
-        $booking = Travel_Booking_Booking::get_by_token($booking_token);
-        if (!$booking) return;
-        
-        $vehicle = Travel_Booking_Vehicle::get($booking->vehicle_id);
-        if (!$vehicle) return;
-        
-        // Données pour l'email
-        $email_data = array(
-            'booking' => $booking,
-            'vehicle' => $vehicle,
-            'order' => $order,
-            'order_id' => $order_id
-        );
-        
-        // Adresse email de l'administrateur
-        $admin_email = get_option('admin_email');
-        
-        // Envoyer l'email
+    $order = wc_get_order($order_id);
+    if (!$order) return;
+    
+    $booking_token = $order->get_meta('_travel_booking_token');
+    if (!$booking_token) return;
+    
+    $booking = Travel_Booking_Booking::get_by_token($booking_token);
+    if (!$booking) return;
+    
+    $vehicle = Travel_Booking_Vehicle::get($booking->vehicle_id);
+    if (!$vehicle) return;
+    
+    // Données pour l'email
+    $email_data = array(
+        'booking' => $booking,
+        'vehicle' => $vehicle,
+        'order' => $order,
+        'order_id' => $order_id
+    );
+    
+    // MODIFICATION : Liste des emails admin
+    $admin_emails = array();
+    
+    // Email admin principal
+    $admin_emails[] = get_option('admin_email');
+    
+    // Email admin supplémentaire - AJOUTEZ VOTRE EMAIL ICI
+    $admin_emails[] = 'admin-transport@votre-domaine.com'; // ← REMPLACEZ PAR VOTRE EMAIL
+    
+    // Optionnel : Email depuis les réglages du plugin
+    $additional_admin_email = get_option('travel_booking_additional_admin_email');
+    if (!empty($additional_admin_email)) {
+        $admin_emails[] = $additional_admin_email;
+    }
+    
+    // Supprimer les doublons et emails vides
+    $admin_emails = array_filter(array_unique($admin_emails));
+    
+    // Envoyer l'email à tous les admins
+    foreach ($admin_emails as $admin_email) {
         self::send_email(
             $admin_email,
             'Nouvelle réservation de transport - Commande #' . $order_id,
@@ -97,6 +113,7 @@ class Travel_Booking_Emails {
             $email_data
         );
     }
+}
     
     /**
      * Envoyer l'email de confirmation de réservation (course confirmée)

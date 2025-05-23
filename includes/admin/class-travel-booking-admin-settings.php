@@ -92,6 +92,7 @@ class Travel_Booking_Admin_Settings {
         register_setting('travel_booking_emails', 'travel_booking_email_from_name');
         register_setting('travel_booking_emails', 'travel_booking_email_from_email');
         register_setting('travel_booking_emails', 'travel_booking_email_footer_text');
+        register_setting('travel_booking_emails', 'travel_booking_additional_admin_email');
         
         add_settings_section(
             'travel_booking_emails_section',
@@ -129,6 +130,14 @@ class Travel_Booking_Admin_Settings {
             'travel_booking_email_footer_text',
             __('Footer Text', 'travel-booking'),
             array(__CLASS__, 'email_footer_text_callback'),
+            'travel_booking_emails',
+            'travel_booking_emails_section'
+        );
+
+        add_settings_field(
+            'travel_booking_additional_admin_email',
+            __('Additional Admin Email', 'travel-booking'),
+            array(__CLASS__, 'additional_admin_email_callback'),
             'travel_booking_emails',
             'travel_booking_emails_section'
         );
@@ -173,6 +182,15 @@ class Travel_Booking_Admin_Settings {
      * Emails section callback
      */
     public static function emails_section_callback() {
+
+        add_settings_field(
+            'travel_booking_additional_admin_email',
+            __('Additional Admin Email', 'travel-booking'),
+            array(__CLASS__, 'additional_admin_email_callback'),
+            'travel_booking_emails',
+            'travel_booking_emails_section'
+        );
+
         echo '<p>' . __('Configure email settings for booking confirmations and notifications.', 'travel-booking') . '</p>';
     }
     
@@ -387,6 +405,16 @@ class Travel_Booking_Admin_Settings {
         
         echo '<textarea name="travel_booking_email_footer_text" rows="3" class="large-text">' . esc_textarea($footer_text) . '</textarea>';
         echo '<p class="description">' . __('Additional text to display in email footer (optional).', 'travel-booking') . '</p>';
+    }
+
+    /**
+     * Additional admin email callback
+     */
+    public static function additional_admin_email_callback() {
+        $additional_email = get_option('travel_booking_additional_admin_email', '');
+        
+        echo '<input type="email" name="travel_booking_additional_admin_email" value="' . esc_attr($additional_email) . '" class="regular-text">';
+        echo '<p class="description">' . __('Additional email address to receive booking notifications (optional).', 'travel-booking') . '</p>';
     }
     
     /**
