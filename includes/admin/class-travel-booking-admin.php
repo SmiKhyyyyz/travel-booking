@@ -115,8 +115,9 @@ class Travel_Booking_Admin {
             array('Travel_Booking_Admin_Settings', 'display_page')
         );
         
-        // Add actions specific to the settings page
         add_action('load-' . $settings_page, array('Travel_Booking_Admin_Settings', 'page_actions'));
+        
+        add_action('admin_init', array('Travel_Booking_Admin_Settings', 'page_actions'));
     }
     
     /**

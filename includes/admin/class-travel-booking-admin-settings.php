@@ -13,138 +13,139 @@ class Travel_Booking_Admin_Settings {
      * Handle settings page actions
      */
     public static function page_actions() {
-        // Register settings - GÉNÉRAL
-        register_setting('travel_booking_general', 'travel_booking_google_maps_api_key');
-        register_setting('travel_booking_general', 'travel_booking_default_location');
-        
-        // Register settings sections - GÉNÉRAL
-        add_settings_section(
-            'travel_booking_general_section',
-            __('General Settings', 'travel-booking'),
-            array(__CLASS__, 'general_section_callback'),
-            'travel_booking_general'
-        );
-        
-        // Register settings fields - GÉNÉRAL
-        add_settings_field(
-            'travel_booking_google_maps_api_key',
-            __('Google Maps API Key', 'travel-booking'),
-            array(__CLASS__, 'google_maps_api_key_callback'),
-            'travel_booking_general',
-            'travel_booking_general_section'
-        );
-        
-        add_settings_field(
-            'travel_booking_default_location',
-            __('Default Location', 'travel-booking'),
-            array(__CLASS__, 'default_location_callback'),
-            'travel_booking_general',
-            'travel_booking_general_section'
-        );
-        
-        // Page selection settings - PAGES
-        register_setting('travel_booking_pages', 'travel_booking_booking_page_id');
-        register_setting('travel_booking_pages', 'travel_booking_summary_page_id');
-        
-        add_settings_section(
-            'travel_booking_pages_section',
-            __('Page Settings', 'travel-booking'),
-            array(__CLASS__, 'pages_section_callback'),
-            'travel_booking_pages'
-        );
-        
-        add_settings_field(
-            'travel_booking_booking_page_id',
-            __('Booking Form Page', 'travel-booking'),
-            array(__CLASS__, 'booking_page_callback'),
-            'travel_booking_pages',
-            'travel_booking_pages_section'
-        );
-        
-        add_settings_field(
-            'travel_booking_summary_page_id',
-            __('Booking Summary Page', 'travel-booking'),
-            array(__CLASS__, 'summary_page_callback'),
-            'travel_booking_pages',
-            'travel_booking_pages_section'
-        );
-        
-        // WooCommerce settings - WOOCOMMERCE
-        register_setting('travel_booking_woocommerce', 'travel_booking_product_id');
-        
-        add_settings_section(
-            'travel_booking_woocommerce_section',
-            __('WooCommerce Settings', 'travel-booking'),
-            array(__CLASS__, 'woocommerce_section_callback'),
-            'travel_booking_woocommerce'
-        );
-        
-        add_settings_field(
-            'travel_booking_product_id',
-            __('Booking Product', 'travel-booking'),
-            array(__CLASS__, 'product_id_callback'),
-            'travel_booking_woocommerce',
-            'travel_booking_woocommerce_section'
-        );
-        
-        // Register settings - EMAILS
-        register_setting('travel_booking_emails', 'travel_booking_email_logo');
-        register_setting('travel_booking_emails', 'travel_booking_email_from_name');
-        register_setting('travel_booking_emails', 'travel_booking_email_from_email');
-        register_setting('travel_booking_emails', 'travel_booking_email_footer_text');
-        register_setting('travel_booking_emails', 'travel_booking_additional_admin_email');
-        
-        add_settings_section(
-            'travel_booking_emails_section',
-            __('Email Settings', 'travel-booking'),
-            array(__CLASS__, 'emails_section_callback'),
-            'travel_booking_emails'
-        );
+    // Register settings - GÉNÉRAL
+    register_setting('travel_booking_general', 'travel_booking_google_maps_api_key');
+    register_setting('travel_booking_general', 'travel_booking_default_location');
+    
+    // Register settings sections - GÉNÉRAL
+    add_settings_section(
+        'travel_booking_general_section',
+        __('General Settings', 'travel-booking'),
+        array(__CLASS__, 'general_section_callback'),
+        'travel_booking_general'
+    );
+    
+    // Register settings fields - GÉNÉRAL
+    add_settings_field(
+        'travel_booking_google_maps_api_key',
+        __('Google Maps API Key', 'travel-booking'),
+        array(__CLASS__, 'google_maps_api_key_callback'),
+        'travel_booking_general',
+        'travel_booking_general_section'
+    );
+    
+    add_settings_field(
+        'travel_booking_default_location',
+        __('Default Location', 'travel-booking'),
+        array(__CLASS__, 'default_location_callback'),
+        'travel_booking_general',
+        'travel_booking_general_section'
+    );
+    
+    // Page selection settings - PAGES
+    register_setting('travel_booking_pages', 'travel_booking_booking_page_id');
+    register_setting('travel_booking_pages', 'travel_booking_summary_page_id');
+    
+    add_settings_section(
+        'travel_booking_pages_section',
+        __('Page Settings', 'travel-booking'),
+        array(__CLASS__, 'pages_section_callback'),
+        'travel_booking_pages'
+    );
+    
+    add_settings_field(
+        'travel_booking_booking_page_id',
+        __('Booking Form Page', 'travel-booking'),
+        array(__CLASS__, 'booking_page_callback'),
+        'travel_booking_pages',
+        'travel_booking_pages_section'
+    );
+    
+    add_settings_field(
+        'travel_booking_summary_page_id',
+        __('Booking Summary Page', 'travel-booking'),
+        array(__CLASS__, 'summary_page_callback'),
+        'travel_booking_pages',
+        'travel_booking_pages_section'
+    );
 
-        // Champs pour les emails
-        add_settings_field(
-            'travel_booking_email_logo',
-            __('Email Logo URL', 'travel-booking'),
-            array(__CLASS__, 'email_logo_callback'),
-            'travel_booking_emails',
-            'travel_booking_emails_section'
-        );
-        
-        add_settings_field(
-            'travel_booking_email_from_name',
-            __('From Name', 'travel-booking'),
-            array(__CLASS__, 'email_from_name_callback'),
-            'travel_booking_emails',
-            'travel_booking_emails_section'
-        );
-        
-        add_settings_field(
-            'travel_booking_email_from_email',
-            __('From Email', 'travel-booking'),
-            array(__CLASS__, 'email_from_email_callback'),
-            'travel_booking_emails',
-            'travel_booking_emails_section'
-        );
-        
-        add_settings_field(
-            'travel_booking_email_footer_text',
-            __('Footer Text', 'travel-booking'),
-            array(__CLASS__, 'email_footer_text_callback'),
-            'travel_booking_emails',
-            'travel_booking_emails_section'
-        );
+    // ✅ CORRECTION : Register settings - EMAILS (AVANT les sections et champs)
+    register_setting('travel_booking_emails', 'travel_booking_email_logo');
+    register_setting('travel_booking_emails', 'travel_booking_email_from_name');
+    register_setting('travel_booking_emails', 'travel_booking_email_from_email');
+    register_setting('travel_booking_emails', 'travel_booking_email_footer_text');
+    register_setting('travel_booking_emails', 'travel_booking_additional_admin_email'); // ← NOUVEAU
+    
+    add_settings_section(
+        'travel_booking_emails_section',
+        __('Email Settings', 'travel-booking'),
+        array(__CLASS__, 'emails_section_callback'),
+        'travel_booking_emails'
+    );
 
-        add_settings_field(
-            'travel_booking_additional_admin_email',
-            __('Additional Admin Email', 'travel-booking'),
-            array(__CLASS__, 'additional_admin_email_callback'),
-            'travel_booking_emails',
-            'travel_booking_emails_section'
-        );
+    // Champs pour les emails
+    add_settings_field(
+        'travel_booking_email_logo',
+        __('Email Logo URL', 'travel-booking'),
+        array(__CLASS__, 'email_logo_callback'),
+        'travel_booking_emails',
+        'travel_booking_emails_section'
+    );
+    
+    add_settings_field(
+        'travel_booking_email_from_name',
+        __('From Name', 'travel-booking'),
+        array(__CLASS__, 'email_from_name_callback'),
+        'travel_booking_emails',
+        'travel_booking_emails_section'
+    );
+    
+    add_settings_field(
+        'travel_booking_email_from_email',
+        __('From Email', 'travel-booking'),
+        array(__CLASS__, 'email_from_email_callback'),
+        'travel_booking_emails',
+        'travel_booking_emails_section'
+    );
+    
+    add_settings_field(
+        'travel_booking_email_footer_text',
+        __('Footer Text', 'travel-booking'),
+        array(__CLASS__, 'email_footer_text_callback'),
+        'travel_booking_emails',
+        'travel_booking_emails_section'
+    );
 
-        // ✅ NOUVEAU : Hook pour vérifier la sécurité de l'API lors de la sauvegarde
-        add_action('update_option_travel_booking_google_maps_api_key', array(__CLASS__, 'check_api_key_security'));
-    }
+    // ✅ NOUVEAU CHAMP : Email admin supplémentaire
+    add_settings_field(
+        'travel_booking_additional_admin_email',
+        __('Additional Admin Email', 'travel-booking'),
+        array(__CLASS__, 'additional_admin_email_callback'),
+        'travel_booking_emails',
+        'travel_booking_emails_section'
+    );
+
+    // WooCommerce settings - WOOCOMMERCE
+    register_setting('travel_booking_woocommerce', 'travel_booking_product_id');
+    
+    add_settings_section(
+        'travel_booking_woocommerce_section',
+        __('WooCommerce Settings', 'travel-booking'),
+        array(__CLASS__, 'woocommerce_section_callback'),
+        'travel_booking_woocommerce'
+    );
+    
+    add_settings_field(
+        'travel_booking_product_id',
+        __('Booking Product', 'travel-booking'),
+        array(__CLASS__, 'product_id_callback'),
+        'travel_booking_woocommerce',
+        'travel_booking_woocommerce_section'
+    );
+
+    // ✅ Hook pour vérifier la sécurité de l'API lors de la sauvegarde
+    add_action('update_option_travel_booking_google_maps_api_key', array(__CLASS__, 'check_api_key_security'));
+}
     
     /**
      * Display the settings page
@@ -411,11 +412,11 @@ class Travel_Booking_Admin_Settings {
      * Additional admin email callback
      */
     public static function additional_admin_email_callback() {
-        $additional_email = get_option('travel_booking_additional_admin_email', '');
-        
-        echo '<input type="email" name="travel_booking_additional_admin_email" value="' . esc_attr($additional_email) . '" class="regular-text">';
-        echo '<p class="description">' . __('Additional email address to receive booking notifications (optional).', 'travel-booking') . '</p>';
-    }
+    $additional_email = get_option('travel_booking_additional_admin_email', '');
+    
+    echo '<input type="email" name="travel_booking_additional_admin_email" value="' . esc_attr($additional_email) . '" class="regular-text">';
+    echo '<p class="description">' . __('Additional email address to receive booking notifications (optional).', 'travel-booking') . '</p>';
+}
     
     /**
      * Product ID field callback
