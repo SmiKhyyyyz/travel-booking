@@ -23,6 +23,10 @@ class Travel_Booking_Emails {
         
         // Hook pour l'email d'annulation
         add_action('woocommerce_order_status_cancelled', array(__CLASS__, 'send_booking_cancelled_email'));
+
+        // Hook pour la notification administrateur lors d'une nouvelle commande
+        add_action('woocommerce_order_status_pending', array(__CLASS__, 'send_admin_notification_email'));
+        add_action('woocommerce_new_order', array(__CLASS__, 'send_admin_notification_email'));
     }
     
     /**
@@ -54,6 +58,42 @@ class Travel_Booking_Emails {
             $booking->client_email,
             'Confirmation de votre réservation de transport - Commande #' . $order_id,
             'booking_confirmation',
+            $email_data
+        );
+    }
+
+    /**
+     * Envoyer une notification à l'administrateur pour une nouvelle réservation
+     */
+    public static function send_admin_notification_email($order_id) {
+        $order = wc_get_order($order_id);
+        if (!$order) return;
+        
+        $booking_token = $order->get_meta('_travel_booking_token');
+        if (!$booking_token) return;
+        
+        $booking = Travel_Booking_Booking::get_by_token($booking_token);
+        if (!$booking) return;
+        
+        $vehicle = Travel_Booking_Vehicle::get($booking->vehicle_id);
+        if (!$vehicle) return;
+        
+        // Données pour l'email
+        $email_data = array(
+            'booking' => $booking,
+            'vehicle' => $vehicle,
+            'order' => $order,
+            'order_id' => $order_id
+        );
+        
+        // Adresse email de l'administrateur
+        $admin_email = get_option('admin_email');
+        
+        // Envoyer l'email
+        self::send_email(
+            $admin_email,
+            'Nouvelle réservation de transport - Commande #' . $order_id,
+            'admin_notification',
             $email_data
         );
     }
@@ -173,6 +213,9 @@ class Travel_Booking_Emails {
                 
             case 'booking_cancelled':
                 return self::booking_cancelled_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo, $footer_text);
+
+            case 'admin_notification':
+                return self::admin_notification_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo, $footer_text);
                 
             default:
                 return '';
@@ -439,6 +482,122 @@ class Travel_Booking_Emails {
         </body>
         </html>';
     }
+
+    /**
+ * Template email de notification administrateur
+ */
+private static function admin_notification_template($booking, $vehicle, $order, $order_id, $company_name, $company_logo, $footer_text) {
+    $travel_date = date_i18n('d/m/Y à H:i', strtotime($booking->travel_date));
+    $price = number_format($booking->price, 2) . ' CHF';
+    
+    $logo_html = '';
+    if (!empty($company_logo)) {
+        $logo_html = '<img src="' . esc_url($company_logo) . '" alt="' . esc_attr($company_name) . '" style="max-height: 60px; margin-bottom: 15px;">';
+    }
+    
+    $footer_html = '';
+    if (!empty($footer_text)) {
+        $footer_html = '<p>' . esc_html($footer_text) . '</p>';
+    }
+    
+    return '
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Nouvelle réservation de transport</title>
+        <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+            .content { background: #f9f9f9; padding: 30px; }
+            .booking-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
+            .detail-label { font-weight: bold; color: #666; }
+            .detail-value { color: #333; }
+            .customer-info { background: #e8f4fc; padding: 15px; border-radius: 8px; margin-top: 20px; }
+            .footer { background: #2c3e50; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                ' . $logo_html . '
+                <h1>Nouvelle réservation de transport</h1>
+                <p>Une nouvelle réservation a été reçue !</p>
+            </div>
+            
+            <div class="content">
+                <h2>Détails de la réservation #' . $booking->id . '</h2>
+                
+                <div class="booking-details">
+                    <div class="detail-row">
+                        <span class="detail-label">Véhicule :</span>
+                        <span class="detail-value">' . esc_html($vehicle->name) . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Départ :</span>
+                        <span class="detail-value">' . esc_html($booking->departure) . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Destination :</span>
+                        <span class="detail-value">' . esc_html($booking->destination) . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Date et heure :</span>
+                        <span class="detail-value">' . $travel_date . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Passagers :</span>
+                        <span class="detail-value">' . $booking->number_of_passengers . ' personne(s)</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Distance :</span>
+                        <span class="detail-value">' . number_format($booking->distance, 2) . ' km</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Aller-retour :</span>
+                        <span class="detail-value">' . ($booking->round_trip ? 'Oui' : 'Non') . '</span>
+                    </div>
+                    ' . (!empty($booking->flight_number) ? '<div class="detail-row"><span class="detail-label">N° de vol :</span><span class="detail-value">' . esc_html($booking->flight_number) . '</span></div>' : '') . '
+                    <div class="detail-row">
+                        <span class="detail-label">Prix :</span>
+                        <span class="detail-value">' . $price . '</span>
+                    </div>
+                </div>
+                
+                <div class="customer-info">
+                    <h3>Informations client</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Nom :</span>
+                        <span class="detail-value">' . esc_html($booking->client_first_name . ' ' . $booking->client_last_name) . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Email :</span>
+                        <span class="detail-value">' . esc_html($booking->client_email) . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Téléphone :</span>
+                        <span class="detail-value">' . esc_html($booking->client_phone) . '</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Adresse :</span>
+                        <span class="detail-value">' . esc_html($booking->client_address) . '</span>
+                    </div>
+                    ' . (!empty($booking->notes) ? '<div class="detail-row"><span class="detail-label">Notes :</span><span class="detail-value">' . esc_html($booking->notes) . '</span></div>' : '') . '
+                </div>
+                
+                <p><a href="' . admin_url('admin.php?page=travel-booking-bookings&action=view&id=' . $booking->id) . '" style="display:inline-block;background:#d3b27f;color:white;padding:12px 20px;text-decoration:none;border-radius:5px;font-weight:bold;">Voir la réservation</a></p>
+            </div>
+            
+            <div class="footer">
+                <p>&copy; ' . date('Y') . ' ' . $company_name . ' - Tous droits réservés</p>
+                ' . $footer_html . '
+            </div>
+        </div>
+    </body>
+    </html>';
+}
 }
 
 // Initialiser le système d'emails

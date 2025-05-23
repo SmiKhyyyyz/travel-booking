@@ -603,7 +603,6 @@ input[type="time"] {
     text-align: center !important;
   }
 }
-
 /**
  * Travel Booking Summary - Design moderne inspiré du 3e screenshot
  */
@@ -749,7 +748,7 @@ input[type="time"] {
 
 .travel-booking-vehicle-showcase {
   text-align: center !important;
-  margin: 0 0 15px 0 !important; /* Marge réduite après l'image */
+  margin: 0 !important; /* Suppression complète de la marge */
   position: relative !important;
   z-index: 1 !important;
 }
