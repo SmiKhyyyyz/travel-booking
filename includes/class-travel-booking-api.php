@@ -60,12 +60,16 @@ class Travel_Booking_API {
      * Check if a given request has permission to get items
      */
     public function get_items_permissions_check($request) {
-    $nonce = $request->get_header('X-WP-Nonce');
-    if (!$nonce || !wp_verify_nonce($nonce, 'wp_rest')) {
-        return new WP_Error('rest_forbidden', 'Invalid nonce', array('status' => 403));
+        if (!current_user_can('read')) {
+            return new WP_Error('rest_forbidden', 'Insufficient permissions', array('status' => 403));
+        }
+        
+        $nonce = $request->get_header('X-WP-Nonce');
+        if (!$nonce || !wp_verify_nonce($nonce, 'wp_rest')) {
+            return new WP_Error('rest_forbidden', 'Invalid nonce', array('status' => 403));
+        }
+        return true;
     }
-    return true;
-}
     
     /**
      * Check if a given request has permission to create items

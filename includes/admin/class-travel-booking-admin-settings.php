@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin settings management - VERSION CORRIGÉE
+ * Admin settings management - VERSION COMPLÈTE AVEC SÉCURITÉ AMÉLIORÉE
  */
 
 // If this file is called directly, abort.
@@ -87,7 +87,6 @@ class Travel_Booking_Admin_Settings {
             'travel_booking_woocommerce_section'
         );
         
-        // ===== AJOUT DE LA SECTION EMAILS =====
         // Register settings - EMAILS
         register_setting('travel_booking_emails', 'travel_booking_email_logo');
         register_setting('travel_booking_emails', 'travel_booking_email_from_name');
@@ -133,6 +132,9 @@ class Travel_Booking_Admin_Settings {
             'travel_booking_emails',
             'travel_booking_emails_section'
         );
+
+        // ✅ NOUVEAU : Hook pour vérifier la sécurité de l'API lors de la sauvegarde
+        add_action('update_option_travel_booking_google_maps_api_key', array(__CLASS__, 'check_api_key_security'));
     }
     
     /**
@@ -175,14 +177,122 @@ class Travel_Booking_Admin_Settings {
     }
     
     /**
-     * Google Maps API Key field callback
+     * Google Maps API Key field callback - VERSION SÉCURISÉE AMÉLIORÉE
      */
     public static function google_maps_api_key_callback() {
         $api_key = get_option('travel_booking_google_maps_api_key', '');
         
         echo '<input type="text" name="travel_booking_google_maps_api_key" value="' . esc_attr($api_key) . '" class="regular-text">';
         echo '<p class="description">' . __('Enter your Google Maps API key. This is required for map and route functionality.', 'travel-booking') . '</p>';
-        echo '<p class="description"><a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank">' . __('How to get a Google Maps API key', 'travel-booking') . '</a></p>';
+        
+        // ✅ NOUVEAU : Avertissement de sécurité
+        echo '<div class="notice notice-warning inline" style="margin: 10px 0; padding: 10px;">';
+        echo '<h4>🔒 ' . __('Security Notice', 'travel-booking') . '</h4>';
+        echo '<p><strong>' . __('Your API key will be visible in the page source - this is normal for Google Maps JavaScript API.', 'travel-booking') . '</strong></p>';
+        echo '<p>' . __('To secure your key:', 'travel-booking') . '</p>';
+        echo '<ol>';
+        echo '<li>' . __('Go to Google Cloud Console → APIs & Services → Credentials', 'travel-booking') . '</li>';
+        echo '<li>' . __('Click on your API key', 'travel-booking') . '</li>';
+        echo '<li>' . __('Under "Application restrictions", select "HTTP referrers (web sites)"', 'travel-booking') . '</li>';
+        echo '<li>' . __('Add your domain: ', 'travel-booking') . '<code>' . esc_html(home_url()) . '/*</code></li>';
+        echo '<li>' . __('Under "API restrictions", select "Restrict key" and choose only the APIs you need', 'travel-booking') . '</li>';
+        echo '</ol>';
+        echo '<p><a href="https://developers.google.com/maps/api-security-best-practices" target="_blank">' . __('Read Google\'s security best practices', 'travel-booking') . '</a></p>';
+        echo '</div>';
+        
+        // ✅ NOUVEAU : Test de la clé API
+        if (!empty($api_key)) {
+            echo '<div id="api-key-test" style="margin: 10px 0;">';
+            echo '<button type="button" id="test-api-key" class="button">' . __('Test API Key', 'travel-booking') . '</button>';
+            echo '<span id="api-test-result" style="margin-left: 10px;"></span>';
+            echo '</div>';
+            
+            // JavaScript pour tester la clé
+            echo '<script>
+            jQuery(document).ready(function($) {
+                $("#test-api-key").click(function() {
+                    var button = $(this);
+                    var result = $("#api-test-result");
+                    
+                    button.prop("disabled", true).text("' . __('Testing...', 'travel-booking') . '");
+                    result.html("");
+                    
+                    // Test simple avec Google Maps Geocoding API
+                    $.get("https://maps.googleapis.com/maps/api/geocode/json", {
+                        address: "Geneva, Switzerland",
+                        key: "' . esc_js($api_key) . '"
+                    })
+                    .done(function(data) {
+                        if (data.status === "OK") {
+                            result.html("<span style=\"color: green;\">✅ ' . __('API Key works correctly', 'travel-booking') . '</span>");
+                        } else if (data.status === "REQUEST_DENIED") {
+                            result.html("<span style=\"color: red;\">❌ ' . __('API Key denied - check restrictions', 'travel-booking') . '</span>");
+                        } else {
+                            result.html("<span style=\"color: orange;\">⚠️ ' . __('API Key issue:', 'travel-booking') . ' " + data.status + "</span>");
+                        }
+                    })
+                    .fail(function() {
+                        result.html("<span style=\"color: red;\">❌ ' . __('Unable to test API Key', 'travel-booking') . '</span>");
+                    })
+                    .always(function() {
+                        button.prop("disabled", false).text("' . __('Test API Key', 'travel-booking') . '");
+                    });
+                });
+            });
+            </script>';
+        }
+        
+        echo '<p><a href="https://developers.google.com/maps/documentation/javascript/get-api-key" target="_blank">' . __('How to get a Google Maps API key', 'travel-booking') . '</a></p>';
+    }
+    
+    /**
+     * ✅ NOUVEAU : Fonction pour vérifier les restrictions API
+     */
+    public static function check_api_key_security() {
+        $api_key = get_option('travel_booking_google_maps_api_key', '');
+        
+        if (empty($api_key)) {
+            return;
+        }
+        
+        // Vérifier si la clé fonctionne
+        $test_url = "https://maps.googleapis.com/maps/api/geocode/json?address=Geneva&key=" . $api_key;
+        
+        $response = wp_remote_get($test_url, array(
+            'timeout' => 10,
+            'headers' => array(
+                'Referer' => home_url()
+            )
+        ));
+        
+        if (is_wp_error($response)) {
+            return;
+        }
+        
+        $body = wp_remote_retrieve_body($response);
+        $data = json_decode($body, true);
+        
+        if (isset($data['status'])) {
+            switch ($data['status']) {
+                case 'REQUEST_DENIED':
+                    add_settings_error(
+                        'travel_booking_general',
+                        'api-key-denied',
+                        __('Google Maps API Key is denied. Please check your key restrictions in Google Cloud Console.', 'travel-booking'),
+                        'error'
+                    );
+                    break;
+                    
+                case 'OVER_QUERY_LIMIT':
+                    add_settings_error(
+                        'travel_booking_general',
+                        'api-key-quota',
+                        __('Google Maps API quota exceeded. Consider upgrading your plan or setting daily limits.', 'travel-booking'),
+                        'warning'
+                    );
+                    break;
+            }
+        }
     }
     
     /**

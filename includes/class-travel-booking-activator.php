@@ -101,6 +101,17 @@ class Travel_Booking_Activator {
         flush_rewrite_rules();
     }
 
+    public function add_webp_avif_mime_types($mimes) {
+    // Vérifier les capacités
+    if (!current_user_can('upload_files')) {
+        return $mimes;
+    }
+    
+    $mimes['webp'] = 'image/webp';
+    $mimes['avif'] = 'image/avif';
+    return $mimes;
+}
+
     /**
      * Create default pages
      */

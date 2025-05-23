@@ -317,4 +317,16 @@ class Travel_Booking_Rate_Limiter {
         
         return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
+
+    public static function log_security_event($event, $details = array()) {
+        $log_entry = array(
+            'timestamp' => current_time('mysql'),
+            'event' => $event,
+            'ip' => Travel_Booking_Rate_Limiter::get_client_ip(),
+            'user_id' => get_current_user_id(),
+            'details' => $details
+        );
+        
+        error_log('Travel Booking Security: ' . json_encode($log_entry));
+    }
 }

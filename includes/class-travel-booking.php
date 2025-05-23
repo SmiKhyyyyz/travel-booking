@@ -36,6 +36,8 @@ class Travel_Booking {
     // Flush rewrite rules if needed
     add_action('init', array($this, 'flush_rewrite_rules_maybe'), 20);
     
+    add_action('send_headers', array($this, 'add_security_headers'));
+    
     $this->load_dependencies();
     $this->define_admin_hooks();
     $this->define_public_hooks();
@@ -144,5 +146,39 @@ class Travel_Booking {
     private function define_shortcodes() {
         $shortcodes = new Travel_Booking_Shortcodes();
         $shortcodes->register_shortcodes();
+    }
+
+    public function security_audit() {
+        $issues = array();
+        
+        // Vérifier les permissions des fichiers
+        if (is_writable(TRAVEL_BOOKING_PLUGIN_DIR)) {
+            $issues[] = 'Plugin directory is writable';
+        }
+        
+        // Vérifier les clés API exposées
+        $api_key = get_option('travel_booking_google_maps_api_key');
+        if (!empty($api_key) && strlen($api_key) > 20) {
+            // Tester les restrictions
+            $test_url = "https://maps.googleapis.com/maps/api/geocode/json?address=test&key=" . $api_key;
+            $response = wp_remote_get($test_url, array('headers' => array('Referer' => 'https://malicious-site.com')));
+            
+            if (!is_wp_error($response)) {
+                $data = json_decode(wp_remote_retrieve_body($response), true);
+                if (isset($data['status']) && $data['status'] === 'OK') {
+                    $issues[] = 'Google Maps API key is not properly restricted';
+                }
+            }
+        }
+        
+        return $issues;
+    }
+
+    public function add_security_headers() {
+        if (!is_admin()) {
+            header('X-Content-Type-Options: nosniff');
+            header('X-Frame-Options: SAMEORIGIN');
+            header('Referrer-Policy: strict-origin-when-cross-origin');
+        }
     }
 }
